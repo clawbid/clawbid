@@ -1,0 +1,10 @@
+node_modules/
+.env
+.env.local
+*.log
+.next/
+dist/
+build/
+.DS_Store
+ssl/
+*.tar.gz
