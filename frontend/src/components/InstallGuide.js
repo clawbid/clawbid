@@ -5,7 +5,7 @@ const CYAN = '#00e5ff';
 const GREEN = '#00ff88';
 const PURPLE = '#a78bfa';
 const GOLD = '#fbbf24';
-const DIM = '#3d4f6b';
+const DIM = '#8aa0be';
 const MONO = 'IBM Plex Mono, monospace';
 
 const code = (text) => (
@@ -67,7 +67,7 @@ function SectionHeader({ number, title, subtitle, color = CYAN }) {
       }}>{number}</div>
       <div>
         <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 3, color: '#dde4f0' }}>{title}</h3>
-        <p style={{ fontSize: 12, color: DIM, lineHeight: 1.6 }}>{subtitle}</p>
+        <p style={{ fontSize: 12, color: '#8aa0be', lineHeight: 1.6 }}>{subtitle}</p>
       </div>
     </div>
   );
