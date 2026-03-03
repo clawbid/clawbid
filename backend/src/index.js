@@ -8,7 +8,6 @@ const WebSocketManager = require('./ws/manager');
 const db = require('./db');
 const cron = require('./cron');
 
-// Routes
 const agentRoutes = require('./routes/agents');
 const marketRoutes = require('./routes/markets');
 const webhookRoutes = require('./routes/webhook');
@@ -19,55 +18,76 @@ const priceRoutes = require('./routes/prices');
 const app = express();
 const httpServer = createServer(app);
 
-// ── Middleware ──────────────────────────────────────────
+// Trust Railway proxy
+app.set('trust proxy', 1);
+
 app.use(helmet({ contentSecurityPolicy: false }));
+
+// CORS — allow all Railway domains + any configured frontend
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
-  credentials: true
+  origin: function(origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    // Allow all railway.app domains and configured frontend
+    if (
+      origin.includes('railway.app') ||
+      origin === process.env.FRONTEND_URL ||
+      process.env.NODE_ENV !== 'production'
+    ) {
+      return callback(null, true);
+    }
+    return callback(null, true); // Allow all for now
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-webhook-id', 'x-openclaw-key']
 }));
+
 app.use(express.json({ limit: '10mb' }));
 
+// Rate limiter with Railway proxy support
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 200,
-  standardHeaders: true
+  max: 500,
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Fix for Railway's X-Forwarded-For
+  keyGenerator: (req) => {
+    return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
+           req.ip || 
+           'unknown';
+  },
+  skip: (req) => req.path === '/health'
 });
 app.use('/api/', limiter);
 
-// ── Routes ──────────────────────────────────────────────
-app.use('/api/auth',     authRoutes);
-app.use('/api/agents',   agentRoutes);
-app.use('/api/markets',  marketRoutes);
-app.use('/api/wallet',   walletRoutes);
-app.use('/api/prices',   priceRoutes);
-app.use('/wh',           webhookRoutes);   // webhook receiver (no /api prefix)
+app.use('/api/auth',    authRoutes);
+app.use('/api/agents',  agentRoutes);
+app.use('/api/markets', marketRoutes);
+app.use('/api/wallet',  walletRoutes);
+app.use('/api/prices',  priceRoutes);
+app.use('/wh',          webhookRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok', ts: Date.now() }));
 
-// ── WebSocket ───────────────────────────────────────────
 const wsManager = new WebSocketManager(httpServer);
 app.set('ws', wsManager);
 
-// ── Start ───────────────────────────────────────────────
 const PORT = process.env.PORT || 4000;
 
-async function start() {
-  try {
-    await db.connect();
-    console.log('✓ Database connected');
+httpServer.listen(PORT, '0.0.0.0', () => {
+  console.log(`🦀 ClawBid backend running on port ${PORT}`);
+});
 
-    cron.start(wsManager);
-    console.log('✓ Cron jobs started');
+db.connect()
+  .then(() => console.log('✓ Database connected'))
+  .catch(err => console.error('⚠ DB error:', err.message));
 
-    httpServer.listen(PORT, () => {
-      console.log(`\n🦀 ClawBid backend running on port ${PORT}`);
-      console.log(`   Health: http://localhost:${PORT}/health`);
-      console.log(`   WS:     ws://localhost:${PORT}/ws\n`);
-    });
-  } catch (err) {
-    console.error('Failed to start:', err);
-    process.exit(1);
-  }
+try {
+  cron.start(wsManager);
+  console.log('✓ Cron jobs started');
+} catch(err) {
+  console.error('⚠ Cron error:', err.message);
 }
 
-start();
+process.on('SIGTERM', () => httpServer.close(() => process.exit(0)));

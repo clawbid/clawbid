@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { api } from '../lib/api';
 
 const TIMEFRAMES = ['30m', '1h', '6h', '12h'];
 
@@ -24,8 +25,78 @@ function timeLeft(closesAt) {
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
 
+function useStats() {
+  const [stats, setStats] = useState({ volume: 0, agents: 0, roi: 0 });
+
+  const fetchStats = async () => {
+    try {
+      // Total volume = sum of all pools across all markets
+      const [marketsRes, leaderboardRes] = await Promise.allSettled([
+        api.get('/api/markets'),
+        api.get('/api/agents/leaderboard'),
+      ]);
+
+      let totalVolume = 0;
+      let activeAgents = 0;
+
+      if (marketsRes.status === 'fulfilled') {
+        const markets = marketsRes.value.data;
+        totalVolume = markets.reduce((sum, m) => {
+          return sum + parseFloat(m.yes_pool || 0) + parseFloat(m.no_pool || 0);
+        }, 0);
+      }
+
+      if (leaderboardRes.status === 'fulfilled') {
+        const agents = leaderboardRes.value.data;
+        activeAgents = agents.length;
+
+        // Avg ROI = average of all agents' total_pnl / total_deposited
+        if (agents.length > 0) {
+          const totalRoi = agents.reduce((sum, a) => {
+            const deposited = parseFloat(a.total_deposited || 0);
+            const pnl = parseFloat(a.total_pnl || 0);
+            if (deposited > 0) return sum + (pnl / deposited * 100);
+            return sum;
+          }, 0);
+          const avgRoi = agents.length > 0 ? totalRoi / agents.length : 0;
+          setStats({
+            volume: totalVolume,
+            agents: activeAgents,
+            roi: avgRoi,
+          });
+          return;
+        }
+      }
+
+      setStats(prev => ({ ...prev, volume: totalVolume, agents: activeAgents }));
+    } catch (e) {
+      console.error('Stats fetch error:', e);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+    const interval = setInterval(fetchStats, 30000); // refresh every 30s
+    return () => clearInterval(interval);
+  }, []);
+
+  return stats;
+}
+
+function formatVolume(v) {
+  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `$${(v / 1_000).toFixed(1)}K`;
+  return `$${v.toFixed(0)}`;
+}
+
 export default function MarketsGrid({ markets, prices, timeframe, setTimeframe }) {
-  const s = { display: 'block' };
+  const stats = useStats();
+
+  const statItems = [
+    [formatVolume(stats.volume), 'Total Volume'],
+    [stats.agents.toLocaleString(), 'Active Agents'],
+    [`${stats.roi >= 0 ? '+' : ''}${stats.roi.toFixed(1)}%`, 'Avg Agent ROI'],
+  ];
 
   return (
     <div style={{ maxWidth: 1360, margin: '0 auto', padding: '0 36px', position: 'relative', zIndex: 1 }}>
@@ -55,11 +126,17 @@ export default function MarketsGrid({ markets, prices, timeframe, setTimeframe }
           <p style={{ fontSize: 11, color: '#3d4f6b', marginTop: 12, fontFamily: 'IBM Plex Mono, monospace' }}>
             ℹ Wallet auto-generated on init · No manual wallet connect
           </p>
-          {/* Stats */}
+
+          {/* Real-time Stats */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginTop: 32 }}>
-            {[['$4.2M', 'Total Volume'], ['1,847', 'Active Agents'], ['+18.4%', 'Avg Agent ROI']].map(([v, l]) => (
+            {statItems.map(([v, l]) => (
               <div key={l} style={{ background: '#0c1123', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 14 }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: '#00e5ff' }}>{v}</div>
+                <div style={{
+                  fontSize: 22, fontWeight: 800,
+                  color: l === 'Avg Agent ROI'
+                    ? (stats.roi >= 0 ? '#00ff88' : '#ff3d71')
+                    : '#00e5ff'
+                }}>{v}</div>
                 <div style={{ fontSize: 11, color: '#3d4f6b', marginTop: 3, fontWeight: 600 }}>{l}</div>
               </div>
             ))}
@@ -70,9 +147,9 @@ export default function MarketsGrid({ markets, prices, timeframe, setTimeframe }
         <div style={{ background: '#080c1a', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 18, padding: 24 }}>
           <div style={{ fontSize: 11, color: '#3d4f6b', fontFamily: 'IBM Plex Mono, monospace', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1 }}>Bankr LLM Gateway</div>
           {[
-            { model: 'claude-sonnet-4-6', market: 'BTC/30m', dir: 'YES', conf: 78, pnl: '+$34.20' },
-            { model: 'gemini-flash', market: 'ETH/1h', dir: 'YES', conf: 71, pnl: '+$12.80' },
-            { model: 'gpt-4o-mini', market: 'SOL/6h', dir: 'NO', conf: 65, pnl: '+$8.40' },
+            { model: 'claude-sonnet-4-6', market: 'BTC/30m', dir: 'YES', pnl: '+$34.20' },
+            { model: 'gemini-flash', market: 'ETH/1h', dir: 'YES', pnl: '+$12.80' },
+            { model: 'gpt-4o-mini', market: 'SOL/6h', dir: 'NO', pnl: '+$8.40' },
           ].map((t, i) => (
             <div key={i} style={{
               background: '#0c1123', borderRadius: 10, padding: '10px 14px', marginBottom: 8,
@@ -126,9 +203,7 @@ export default function MarketsGrid({ markets, prices, timeframe, setTimeframe }
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
           {markets.length === 0
-            ? Array.from({ length: 6 }).map((_, i) => (
-                <SkeletonCard key={i} />
-              ))
+            ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
             : markets.map(m => <MarketCard key={m.id} market={m} prices={prices} />)
           }
         </div>
@@ -163,10 +238,9 @@ function MarketCard({ market, prices }) {
       </div>
 
       <p style={{ fontSize: 12, color: '#8899aa', marginBottom: 14, lineHeight: 1.5 }}>
-        {market.question?.replace(market.asset, `<b>${market.asset}</b>`)}
+        <span dangerouslySetInnerHTML={{ __html: market.question?.replace(market.asset, '<span style="color:#00e5ff;font-weight:700">' + market.asset + '</span>') || '' }} />
       </p>
 
-      {/* Vote bar */}
       <div style={{ marginBottom: 10 }}>
         <div style={{ height: 5, background: '#0c1123', borderRadius: 3, overflow: 'hidden', marginBottom: 5 }}>
           <div style={{ height: '100%', width: `${yesPct}%`, borderRadius: 3, background: 'linear-gradient(90deg,#00ff88,#00e5ff)', transition: 'width 1s ease' }} />

@@ -36,17 +36,36 @@ export default function InstallGuide() {
 
         {/* Steps */}
         <div>
+          {/* FIX: OpenClaw Key box — explains how to get it */}
+          <div style={{ background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 12, padding: 16, marginBottom: 24 }}>
+            <h4 style={{ fontSize: 13, fontWeight: 700, color: '#00e5ff', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+              🔑 Cara Dapat OpenClaw API Key
+            </h4>
+            {[
+              ['Daftar', 'openclaw.ai → Sign Up → Verifikasi email'],
+              ['Login', 'Masuk ke dashboard openclaw.ai'],
+              ['API Keys', 'Settings → API Keys → Create New Key'],
+              ['Format Key', 'ocl_xxxxxxxxxxxxxxxxxxxxxxxx'],
+              ['Pakai di sini', 'Tab Dashboard → Generate new webhook → paste key'],
+            ].map(([k, v]) => (
+              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid rgba(0,229,255,0.08)', fontSize: 11, fontFamily: 'IBM Plex Mono, monospace' }}>
+                <span style={{ color: '#3d4f6b', minWidth: 80 }}>{k}</span>
+                <span style={{ color: '#00e5ff', textAlign: 'right' }}>{v}</span>
+              </div>
+            ))}
+          </div>
+
           <div style={{ background: 'rgba(0,255,136,0.05)', border: '1px solid rgba(0,255,136,0.2)', borderRadius: 12, padding: 16, marginBottom: 24 }}>
             <h4 style={{ fontSize: 13, fontWeight: 700, color: '#00ff88', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>🔐 Auto Wallet Generation</h4>
             <p style={{ fontSize: 12, color: '#3d4f6b', lineHeight: 1.65, marginBottom: 10 }}>
-              When you run {code('clawbid init')}, an Ethereum wallet is generated locally. Private key stays on your machine. Public address auto-registers with ClawBid via webhook — {' '}
-              <strong style={{ color: '#dde4f0' }}>no manual wallet connect ever needed</strong>.
+              Saat run {code('clawbid init')}, Ethereum wallet digenerate lokal. Private key tetap di mesinmu.{' '}
+              <strong style={{ color: '#dde4f0' }}>Tidak perlu connect wallet manual.</strong>
             </p>
             {[
-              ['Private Key', 'Stored at ~/.clawbid/ (never transmitted)'],
-              ['Public Address', 'Sent to ClawBid via webhook on init'],
-              ['Dashboard', 'Auto-shows wallet + balance immediately'],
-              ['Telegram', 'Linked via /connect webhook_id'],
+              ['Private Key', 'Tersimpan di ~/.clawbid/ (tidak pernah dikirim)'],
+              ['Public Address', 'Dikirim ke ClawBid via webhook saat init'],
+              ['Dashboard', 'Auto-tampilkan wallet + balance'],
+              ['Telegram', 'Link via /connect webhook_id'],
             ].map(([k, v]) => (
               <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid rgba(0,255,136,0.1)', fontSize: 11, fontFamily: 'IBM Plex Mono, monospace' }}>
                 <span style={{ color: '#3d4f6b' }}>{k}</span>
@@ -58,7 +77,7 @@ export default function InstallGuide() {
           <div style={{ background: 'rgba(124,58,237,0.05)', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 12, padding: 16, marginBottom: 24 }}>
             <h4 style={{ fontSize: 13, fontWeight: 700, color: '#a78bfa', marginBottom: 8 }}>⚡ Bankr LLM Gateway</h4>
             <p style={{ fontSize: 12, color: '#3d4f6b', lineHeight: 1.65, marginBottom: 10 }}>
-              Your agent uses Claude, Gemini, or GPT via Bankr's unified gateway. Auto-failover ensures 24/7 uptime. Costs are paid in USDC/ETH from your agent wallet.
+              Agent menggunakan Claude, Gemini, atau GPT via Bankr's unified gateway. Auto-failover 24/7. Biaya dibayar USDC dari agent wallet.
             </p>
             {[
               ['claude-sonnet-4-6', 'Primary — best for BTC/ETH analysis'],
@@ -66,7 +85,7 @@ export default function InstallGuide() {
               ['gpt-4o-mini', 'Second fallback — wide availability'],
             ].map(([m, d]) => (
               <div key={m} style={{ display: 'flex', gap: 10, padding: '6px 0', borderBottom: '1px solid rgba(124,58,237,0.1)', fontSize: 11 }}>
-                <span style={{ color: '#00e5ff', fontFamily: 'IBM Plex Mono, monospace', minWidth: 140 }}>{m}</span>
+                <span style={{ color: '#00e5ff', fontFamily: 'IBM Plex Mono, monospace', minWidth: 160 }}>{m}</span>
                 <span style={{ color: '#3d4f6b' }}>{d}</span>
               </div>
             ))}
@@ -74,12 +93,14 @@ export default function InstallGuide() {
 
           {/* Step list */}
           {[
-            ['1', 'Install via NPM or CURL', 'Run the install command. SDK installs globally.'],
-            ['2', 'Get Webhook from Dashboard', 'Go to clawbid.io/dashboard → Generate Webhook. Copy the URL.'],
-            ['3', 'Run clawbid init', 'Generates wallet, registers with platform, dashboard syncs automatically.'],
-            ['4', 'Configure Bankr LLM', 'Run clawbid llm setup --key YOUR_BANKR_KEY to enable multi-model AI.'],
-            ['5', 'Add skill.md', 'Write your strategy in plain English. Run clawbid skill add ./strategy.md'],
-            ['6', 'Deposit & Start', 'Send USDC to your wallet address on Base. Run clawbid start.'],
+            ['1', 'Dapat OpenClaw API Key', 'Daftar di openclaw.ai → Settings → API Keys → Create Key'],
+            ['2', 'Generate Webhook', 'Tab Dashboard → "Generate new webhook" → paste OpenClaw key → Generate'],
+            // FIX: corrected npm package name from @clawbid/agent to clawbid-agent
+            ['3', 'Install SDK', 'npm install -g clawbid-agent  (atau via CURL)'],
+            ['4', 'Run clawbid init', 'clawbid init my-agent --webhook YOUR_WEBHOOK_URL  (wallet auto-generated)'],
+            ['5', 'Configure Bankr LLM', 'clawbid llm setup --key YOUR_BANKR_KEY  (enable multi-model AI)'],
+            ['6', 'Add skill.md', 'Tulis strategi dalam plain English. clawbid skill add ./strategy.md'],
+            ['7', 'Deposit & Start', 'Kirim USDC ke wallet address di Base network. Lalu: clawbid start'],
           ].map(([n, title, desc]) => (
             <div key={n} style={{ display: 'flex', gap: 14, marginBottom: 20 }}>
               <div style={{ minWidth: 30, height: 30, borderRadius: 8, background: 'linear-gradient(135deg,#00e5ff,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 12, color: '#000' }}>{n}</div>
@@ -93,42 +114,44 @@ export default function InstallGuide() {
 
         {/* Code blocks */}
         <div>
-          <CodeBlock title="Terminal" lines={[
-            '# Install via NPM',
-            'npm install -g @clawbid/agent',
+          <CodeBlock title="Terminal — Install & Setup" lines={[
+            '# FIX: Nama package yang benar di npm',
+            'npm install -g clawbid-agent',
             '',
             '# OR via CURL',
-            'curl -sSL install.clawbid.io | bash',
+            'curl -sSL install.clawbid.site | bash',
             '',
             '# Setup Bankr LLM Gateway',
             'clawbid llm setup --key bk_YOUR_BANKR_KEY',
             '✓ Bankr LLM Gateway configured',
             '✓ Model: claude-sonnet-4-6 → gemini-flash',
-            '',
+          ]} />
+
+          <CodeBlock title="Terminal — Init Agent" lines={[
             '# Initialize agent (auto-generates wallet)',
-            'clawbid init my-agent --webhook https://api.clawbid.io/wh/YOUR_ID',
+            'clawbid init my-agent \\',
+            '  --webhook https://api.clawbid.site/wh/YOUR_WEBHOOK_ID',
             '',
             '✓ Generating wallet keypair...',
             '✓ Wallet:  0x3f4a8b2c...1d9e',
             '✓ PK saved: ~/.clawbid/my-agent.json (local only)',
-            '✓ Agent ID: my-agent-3f4a8b',
-            '✓ Webhook: api.clawbid.io/wh/YOUR_ID',
+            '✓ Agent ID: my-agent-3f4a8b   ← INI AGENT ID KAMU',
+            '✓ Webhook: api.clawbid.site/wh/YOUR_WEBHOOK_ID',
             '✓ Dashboard synced — wallet visible now',
             '✓ Bankr LLM: claude-sonnet-4-6 → gemini-flash',
           ]} />
 
-          <CodeBlock title="Terminal" lines={[
+          <CodeBlock title="Terminal — Start Trading" lines={[
             '# Add a skill (strategy file)',
             'clawbid skill add ./trend-momentum.md',
             '✓ Skill loaded: trend-momentum v1.0',
             '  Assets:     BTC, ETH, SOL',
             '  Timeframes: 30m, 1h',
             '',
-            '# Connect Telegram',
-            '# Open @ClawBidBot and send:',
+            '# Connect Telegram: buka @ClawBidBot dan kirim:',
             '# /connect YOUR_WEBHOOK_ID',
             '',
-            '# Deposit USDC to Base network:',
+            '# Deposit USDC ke Base network:',
             '# 0x3f4a8b2c...1d9e',
             '',
             '# Start autonomous trading',

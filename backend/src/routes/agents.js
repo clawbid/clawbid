@@ -33,7 +33,7 @@ router.post('/register', async (req, res) => {
 
     res.json({
       webhook_id: webhookId,
-      webhook_url: `${process.env.BACKEND_URL || 'https://api.clawbid.io'}/wh/${webhookId}`,
+      webhook_url: `${process.env.BACKEND_URL || 'https://api.clawbid.site'}/wh/${webhookId}`,
       agent_db_id: agent.rows[0].id,
       message: 'Copy webhook_url into your openclaw.config.js and run clawbid init'
     });

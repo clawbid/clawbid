@@ -9,7 +9,7 @@ const chalk = require('chalk');
 const cron = require('node-cron');
 const crypto = require('crypto');
 
-const CLAWBID_API = process.env.CLAWBID_API || 'https://api.clawbid.io';
+const CLAWBID_API = process.env.CLAWBID_API || 'https://api.clawbid.site';
 const BANKR_LLM_URL = process.env.BANKR_LLM_URL || 'https://llm.bankr.bot';
 
 async function start(config) {

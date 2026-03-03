@@ -182,7 +182,7 @@ async function resolveMarket(marketId) {
 
     // Settle positions
     const positions = await client.query(
-      `SELECT p.*, w.agent_id as wid FROM positions p
+      `SELECT p.* FROM positions p
        WHERE p.market_id=$1 AND p.settled=FALSE`,
       [marketId]
     );

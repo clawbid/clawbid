@@ -28,8 +28,16 @@ CREATE TABLE IF NOT EXISTS agents (
   llm_model       VARCHAR(64) DEFAULT 'claude-sonnet-4-6',
   llm_fallback    VARCHAR(64) DEFAULT 'gemini-flash',
   use_bankr_llm   BOOLEAN DEFAULT TRUE,
+  telegram_chat_id VARCHAR(64),
   created_at      TIMESTAMPTZ DEFAULT NOW()
 );
+
+
+-- Add missing columns to existing deployments
+DO $$ BEGIN
+  ALTER TABLE agents ADD COLUMN IF NOT EXISTS telegram_chat_id VARCHAR(64);
+EXCEPTION WHEN others THEN NULL;
+END $$;
 
 -- ─── WALLETS ────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS wallets (
@@ -112,6 +120,27 @@ CREATE TABLE IF NOT EXISTS llm_usage (
   market_id       UUID REFERENCES markets(id),
   ts              TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- ─── TELEGRAM LOGIN COLUMNS ──────────────────────────────────────────────────
+DO $$ BEGIN
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_chat_id BIGINT;
+EXCEPTION WHEN others THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_username TEXT;
+EXCEPTION WHEN others THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_users_telegram_chat_id ON users(telegram_chat_id);
+EXCEPTION WHEN others THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS idx_users_openclaw_key ON users(openclaw_key);
+EXCEPTION WHEN others THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS idx_agents_telegram_chat_id ON agents(telegram_chat_id);
+EXCEPTION WHEN others THEN NULL; END $$;
 `;
 
 async function migrate() {

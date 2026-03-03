@@ -36,7 +36,7 @@ router.post('/:webhookId', async (req, res) => {
     );
 
     if (agent.rows.length === 0) {
-      return res.status(404).json({ error: 'Webhook ID not found. Generate one at clawbid.io/dashboard' });
+      return res.status(404).json({ error: 'Webhook ID not found. Generate one at clawbid.site/dashboard' });
     }
 
     const ag = agent.rows[0];

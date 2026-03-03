@@ -7,11 +7,11 @@
  */
 
 const cron = require('node-cron');
-const db = require('./db');
+const db = require('../db');         
 const axios = require('axios');
-const { createMarkets, resolveMarket } = require('./services/market');
-const { runTradingCycle } = require('./services/agent');
-const TelegramService = require('./services/telegram');
+const { createMarkets, resolveMarket } = require('../services/market');  
+const { runTradingCycle } = require('../services/agent');                 
+const TelegramService = require('../services/telegram');                  
 
 const ASSETS = ['BTC', 'ETH', 'SOL', 'BNB', 'AVAX', 'ADA', 'MATIC', 'LINK'];
 

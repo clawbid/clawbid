@@ -4,4 +4,4 @@ COPY package*.json ./
 RUN npm install --only=production
 COPY . .
 EXPOSE 4000
-CMD ["node", "src/index.js"]
+CMD ["sh", "-c", "node src/db/migrate.js && node src/index.js"]
