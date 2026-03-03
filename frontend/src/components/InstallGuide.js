@@ -5,7 +5,7 @@ const CYAN = '#00e5ff';
 const GREEN = '#00ff88';
 const PURPLE = '#a78bfa';
 const GOLD = '#fbbf24';
-const DIM = '#8aa0be';
+const DIM = '#b0c4d8';
 const MONO = 'IBM Plex Mono, monospace';
 
 const code = (text) => (
@@ -66,8 +66,8 @@ function SectionHeader({ number, title, subtitle, color = CYAN }) {
         fontWeight: 800, fontSize: 13, color: '#000', flexShrink: 0,
       }}>{number}</div>
       <div>
-        <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 3, color: '#dde4f0' }}>{title}</h3>
-        <p style={{ fontSize: 12, color: '#8aa0be', lineHeight: 1.6 }}>{subtitle}</p>
+        <h3 style={{ fontSize: 16, fontWeight: 800, marginBottom: 4, color: '#ffffff' }}>{title}</h3>
+        <p style={{ fontSize: 12, color: '#b0c4d8', lineHeight: 1.6 }}>{subtitle}</p>
       </div>
     </div>
   );
@@ -196,7 +196,7 @@ export default function InstallGuide() {
           <Badge text="v1.0.10" color="0,229,255" />
           <Badge text="Base Network" color="0,255,136" />
         </div>
-        <p style={{ color: DIM, fontSize: 13, lineHeight: 1.7 }}>
+        <p style={{ color: '#b0c4d8', fontSize: 13, lineHeight: 1.7 }}>
           Set up your autonomous AI trading agent in minutes · Login via your own Telegram bot ·
           Wallet auto-generated locally · Write your own strategy in plain English
         </p>
@@ -451,7 +451,7 @@ export default function InstallGuide() {
 
             <div style={{ background: '#080e1d', borderRadius: 8, padding: 14, fontFamily: MONO, fontSize: 11, lineHeight: 1.85 }}>
               {SKILL_EXAMPLES[activeSkill].code.map((line, i) => {
-                if (line.startsWith('---')) return <div key={i} style={{ color: '#3d4f6b' }}>{line}</div>;
+                if (line.startsWith('---')) return <div key={i} style={{ color: '#6a8099' }}>{line}</div>;
                 if (line.startsWith('name:') || line.startsWith('version:') || line.startsWith('markets:') || line.startsWith('timeframes:'))
                   return <div key={i} style={{ color: PURPLE }}>{line}</div>;
                 if (line.startsWith('#')) return <div key={i} style={{ color: GOLD, fontWeight: 700 }}>{line}</div>;
