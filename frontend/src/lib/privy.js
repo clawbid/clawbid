@@ -11,7 +11,7 @@
 
 import { PrivyProvider as BasePrivyProvider, usePrivy, useWallets } from '@privy-io/react-auth';
 import { base } from 'viem/chains';
-import { useCallback } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { api } from './api';
 
 const MARKET_ADDRESS = process.env.NEXT_PUBLIC_MARKET_ADDRESS || '';
@@ -55,6 +55,21 @@ export function useAuth() {
   const displayName = twitterHandle
     || (address ? `${address.slice(0, 6)}...${address.slice(-4)}` : null)
     || (user?.email?.address ? user.email.address.split('@')[0] : null);
+
+  // ── USDC Balance (live from Base) ─────────────────────────────────────────
+  const [usdcBalance, setUsdcBalance] = useState(0);
+  useEffect(() => {
+    if (!address) { setUsdcBalance(0); return; }
+    const USDC = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+    const data = '0x70a08231' + address.slice(2).toLowerCase().padStart(64, '0');
+    fetch('https://mainnet.base.org', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: USDC, data }, 'latest'] }),
+    })
+      .then(r => r.json())
+      .then(r => { if (r.result && r.result !== '0x') setUsdcBalance(parseInt(r.result, 16) / 1e6); })
+      .catch(() => {});
+  }, [address]);
 
   // ── Place Bet ───────────────────────────────────────────────────────────────
   // Simulation mode: save to DB only (no wallet tx required)
@@ -124,6 +139,7 @@ export function useAuth() {
     address,
     displayName,
     twitterHandle,
+    usdcBalance,
     simulationMode: SIMULATION_MODE,
     login,
     logout,
