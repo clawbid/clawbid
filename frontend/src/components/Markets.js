@@ -223,29 +223,36 @@ export default function Markets({ markets: marketsProp = [], prices }) {
   return (
     <div style={{ background: '#f7f8fa', minHeight: '100vh' }}>
       <style>{`
-        .markets-hero { padding: 28px 16px 24px !important; }
-        .markets-hero-h1 { font-size: 24px !important; letter-spacing: -0.5px !important; }
-        .markets-stats { flex-direction: column !important; gap: 8px !important; }
-        .markets-stat { padding: 10px 14px !important; min-width: unset !important; }
-        .markets-stat-val { font-size: 16px !important; }
-        .filter-bar { padding: 0 12px !important; }
-        .markets-grid-wrapper { padding: 16px 12px 80px !important; }
-        .markets-grid { grid-template-columns: 1fr !important; }
+        /* ── Mobile first ── */
+        .markets-hero     { padding: 24px 16px 20px !important; }
+        .markets-hero-h1  { font-size: 22px !important; letter-spacing: -0.5px !important; }
+        .markets-hero p   { font-size: 13px !important; }
+        .markets-stats    { flex-direction: row !important; flex-wrap: wrap !important; gap: 8px !important; }
+        .markets-stat     { padding: 10px 12px !important; min-width: unset !important; flex: 1 1 70px !important; }
+        .markets-stat-val { font-size: 14px !important; }
+        .markets-stat-lbl { font-size: 9px !important; }
+        .filter-bar       { padding: 0 12px !important; }
+        .markets-grid-wrapper { padding: 14px 12px 80px !important; }
+        .markets-grid     { grid-template-columns: 1fr !important; }
+        /* ── Tablet ── */
         @media (min-width: 480px) {
-          .markets-hero { padding: 36px 20px 28px !important; }
-          .markets-hero-h1 { font-size: 30px !important; }
-          .markets-stats { flex-direction: row !important; }
-          .markets-grid { grid-template-columns: repeat(auto-fill,minmax(280px,1fr)) !important; }
-          .markets-grid-wrapper { padding: 20px 16px 40px !important; }
+          .markets-hero    { padding: 32px 20px 24px !important; }
+          .markets-hero-h1 { font-size: 28px !important; }
+          .markets-stat    { flex: unset !important; min-width: 90px !important; }
+          .markets-grid    { grid-template-columns: repeat(auto-fill,minmax(280px,1fr)) !important; }
+          .markets-grid-wrapper { padding: 18px 16px 60px !important; }
         }
+        /* ── Desktop ── */
         @media (min-width: 769px) {
-          .markets-hero { padding: 48px 36px 40px !important; }
+          .markets-hero    { padding: 48px 36px 40px !important; }
           .markets-hero-h1 { font-size: 40px !important; letter-spacing: -1.5px !important; }
-          .markets-stat { padding: 14px 20px !important; min-width: 100px !important; }
-          .markets-stat-val { font-size: 22px !important; }
-          .filter-bar { padding: 0 36px !important; }
+          .markets-hero p  { font-size: 15px !important; }
+          .markets-stat    { padding: 14px 20px !important; min-width: 100px !important; }
+          .markets-stat-val{ font-size: 22px !important; }
+          .markets-stat-lbl{ font-size: 11px !important; }
+          .filter-bar      { padding: 0 36px !important; }
           .markets-grid-wrapper { padding: 28px 36px !important; }
-          .markets-grid { grid-template-columns: repeat(auto-fill,minmax(300px,1fr)) !important; }
+          .markets-grid    { grid-template-columns: repeat(auto-fill,minmax(300px,1fr)) !important; }
         }
       `}</style>
 
@@ -276,12 +283,13 @@ export default function Markets({ markets: marketsProp = [], prices }) {
               {[
                 [formatVol(totalPool), 'Total Volume', '📊'],
                 [activeMarkets.length.toString(), 'Active Markets', '🏛'],
-                [formatNum(totalAgents), 'Active Agents', '🤖'],
+                [formatNum(totalHumans), 'Humans', '👤'],
+                [formatNum(totalAgents), 'AI Agents', '🤖'],
               ].map(([v, l, icon]) => (
                 <div key={l} className="markets-stat" style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 14, textAlign: 'center', minWidth: 100 }}>
                   <div style={{ fontSize: 18 }}>{icon}</div>
                   <div className="markets-stat-val" style={{ fontWeight: 800, color: '#fff', marginTop: 4 }}>{v}</div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2, fontFamily: 'IBM Plex Mono, monospace' }}>{l}</div>
+                  <div className="markets-stat-lbl" style={{ color: 'rgba(255,255,255,0.6)', marginTop: 2, fontFamily: 'IBM Plex Mono, monospace' }}>{l}</div>
                 </div>
               ))}
             </div>
