@@ -1,23 +1,22 @@
 'use client';
 import { useState } from 'react';
 
+const CYAN = '#00e5ff';
+const GREEN = '#00ff88';
+const PURPLE = '#a78bfa';
+const GOLD = '#fbbf24';
+const DIM = '#3d4f6b';
+const MONO = 'IBM Plex Mono, monospace';
+
 const code = (text) => (
-  <code style={{ color: '#00e5ff', fontFamily: 'IBM Plex Mono, monospace', fontSize: 12 }}>{text}</code>
+  <code style={{ color: CYAN, fontFamily: MONO, fontSize: 12 }}>{text}</code>
 );
 
 function CodeBlock({ title, lines }) {
   const [copied, setCopied] = useState(false);
-
   const copyText = lines
     .filter(l => !l.startsWith('#') && !l.startsWith('✓') && !l.startsWith('🦀') && !l.startsWith('⚠') && l !== '')
     .join('\n');
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(copyText).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
 
   return (
     <div style={{ background: '#0c1123', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, overflow: 'hidden', marginBottom: 14 }}>
@@ -27,31 +26,21 @@ function CodeBlock({ title, lines }) {
             <div key={c} style={{ width: 9, height: 9, borderRadius: '50%', background: c }} />
           ))}
         </div>
-        <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 11, color: '#3d4f6b' }}>{title}</span>
+        <span style={{ fontFamily: MONO, fontSize: 11, color: DIM }}>{title}</span>
         <button
-          onClick={handleCopy}
-          style={{
-            background: 'none',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 5,
-            padding: '2px 10px',
-            color: copied ? '#00ff88' : '#3d4f6b',
-            fontSize: 10,
-            cursor: 'pointer',
-            fontFamily: 'IBM Plex Mono, monospace',
-            transition: 'color 0.2s',
-          }}
+          onClick={() => { navigator.clipboard.writeText(copyText); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+          style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5, padding: '2px 10px', color: copied ? GREEN : DIM, fontSize: 10, cursor: 'pointer', fontFamily: MONO, transition: 'color 0.2s' }}
         >
           {copied ? '✓ copied' : 'copy'}
         </button>
       </div>
-      <div style={{ padding: 18, fontFamily: 'IBM Plex Mono, monospace', fontSize: 12, lineHeight: 1.9 }}>
+      <div style={{ padding: 18, fontFamily: MONO, fontSize: 12, lineHeight: 1.9 }}>
         {lines.map((line, i) => {
-          if (line.startsWith('#')) return <div key={i} style={{ color: '#3d4f6b' }}>{line}</div>;
-          if (line.startsWith('✓')) return <div key={i} style={{ color: '#00ff88' }}>{line}</div>;
-          if (line.startsWith('🦀') || line.startsWith('⚠')) return <div key={i} style={{ color: '#fbbf24' }}>{line}</div>;
+          if (line.startsWith('#')) return <div key={i} style={{ color: DIM }}>{line}</div>;
+          if (line.startsWith('✓')) return <div key={i} style={{ color: GREEN }}>{line}</div>;
+          if (line.startsWith('🦀') || line.startsWith('⚠')) return <div key={i} style={{ color: GOLD }}>{line}</div>;
           if (line === '') return <br key={i} />;
-          return <div key={i} style={{ color: '#00e5ff' }}>{line}</div>;
+          return <div key={i} style={{ color: CYAN }}>{line}</div>;
         })}
       </div>
     </div>
@@ -60,217 +49,442 @@ function CodeBlock({ title, lines }) {
 
 function InfoRow({ label, value, color }) {
   return (
-    <div style={{
-      display: 'flex', justifyContent: 'space-between', padding: '6px 0',
-      borderBottom: `1px solid rgba(${color},0.1)`,
-      fontSize: 11, fontFamily: 'IBM Plex Mono, monospace',
-    }}>
-      <span style={{ color: '#3d4f6b', minWidth: 110 }}>{label}</span>
+    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: `1px solid rgba(${color},0.1)`, fontSize: 11, fontFamily: MONO }}>
+      <span style={{ color: DIM, minWidth: 120 }}>{label}</span>
       <span style={{ color: `rgb(${color})`, textAlign: 'right' }}>{value}</span>
     </div>
   );
 }
 
+function SectionHeader({ number, title, subtitle, color = CYAN }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 20, marginTop: 36 }}>
+      <div style={{
+        minWidth: 32, height: 32, borderRadius: 9,
+        background: `linear-gradient(135deg, ${color}, #7c3aed)`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontWeight: 800, fontSize: 13, color: '#000', flexShrink: 0,
+      }}>{number}</div>
+      <div>
+        <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 3, color: '#dde4f0' }}>{title}</h3>
+        <p style={{ fontSize: 12, color: DIM, lineHeight: 1.6 }}>{subtitle}</p>
+      </div>
+    </div>
+  );
+}
+
+function Badge({ text, color }) {
+  return (
+    <span style={{
+      display: 'inline-block', padding: '2px 8px', borderRadius: 5,
+      background: `rgba(${color},0.1)`, border: `1px solid rgba(${color},0.25)`,
+      fontSize: 10, fontFamily: MONO, color: `rgb(${color})`, marginRight: 6,
+    }}>{text}</span>
+  );
+}
+
+const SKILL_EXAMPLES = [
+  {
+    label: 'Momentum + RSI',
+    color: '0,229,255',
+    code: [
+      '---',
+      'name: momentum-rsi',
+      'version: 1.0.0',
+      'markets: [BTC, ETH, SOL]',
+      'timeframes: [30m, 1h]',
+      '---',
+      '',
+      '# Momentum + RSI Strategy',
+      '',
+      '## Signal YES (price will go UP)',
+      '- Last 3 candles are all green',
+      '- Price above 5-candle moving average',
+      '- RSI between 55-70 (strong, not overbought)',
+      '- YES pool odds below 60% (good value)',
+      '',
+      '## Signal NO (price will go DOWN)',
+      '- Last 3 candles are all red',
+      '- Price below 5-candle moving average',
+      '- RSI between 30-45 (weak, not oversold)',
+      '',
+      '## Risk',
+      '- Confidence threshold: 65%',
+      '- Max bet: 4% of balance per trade',
+      '- Skip if market closes in < 8 minutes',
+    ]
+  },
+  {
+    label: 'Contrarian',
+    color: '251,191,36',
+    code: [
+      '---',
+      'name: contrarian',
+      'version: 1.0.0',
+      'markets: [BTC, ETH]',
+      'timeframes: [1h, 6h]',
+      '---',
+      '',
+      '# Contrarian Strategy',
+      '',
+      '## Core Idea',
+      'Bet against the crowd when the market is',
+      'heavily one-sided. Crowd is usually wrong',
+      'at extremes.',
+      '',
+      '## Signal YES',
+      '- NO pool odds > 70% (crowd betting NO)',
+      '- Price has dropped > 2% in last 2 hours',
+      '- RSI < 35 (oversold — expect bounce)',
+      '',
+      '## Signal NO',
+      '- YES pool odds > 70% (crowd betting YES)',
+      '- Price has risen > 2% in last 2 hours',
+      '- RSI > 65 (overbought — expect pullback)',
+      '',
+      '## Risk',
+      '- Only trade when odds imbalance > 65/35',
+      '- Max 3% of balance per bet',
+    ]
+  },
+  {
+    label: 'Simple & Stable',
+    color: '0,255,136',
+    code: [
+      '---',
+      'name: simple-btc',
+      'version: 1.0.0',
+      'markets: [BTC]',
+      'timeframes: [1h, 6h, 12h]',
+      '---',
+      '',
+      '# Simple BTC Strategy',
+      '',
+      '## Overview',
+      'Keep it simple: only trade BTC on longer',
+      'timeframes where trends are clearer.',
+      '',
+      '## Signal YES',
+      '- BTC price is higher than 24 hours ago',
+      '- Market sentiment looks positive',
+      '- YES odds are 40-55% (fair value)',
+      '',
+      '## Signal NO',
+      '- BTC price is lower than 24 hours ago',
+      '- Downtrend visible on 6h chart',
+      '',
+      '## Risk',
+      '- Max 2% of balance per trade',
+      '- Never more than 2 open positions',
+      '- Skip all trades on weekends',
+    ]
+  },
+];
+
 export default function InstallGuide() {
+  const [activeSkill, setActiveSkill] = useState(0);
+
   return (
     <div style={{ maxWidth: 1360, margin: '0 auto', padding: '40px 36px', position: 'relative', zIndex: 1 }}>
 
-      <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: -1, marginBottom: 6 }}>
-        Install ClawBid Agent
-      </h2>
-      <p style={{ color: '#3d4f6b', marginBottom: 40 }}>
-        3 steps to live autonomous trading · Login via Telegram · Wallet auto-generated · Bankr LLM Gateway included
-      </p>
+      {/* ── Header ── */}
+      <div style={{ marginBottom: 40 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+          <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: -1 }}>
+            Install ClawBid Agent
+          </h2>
+          <Badge text="v1.0.10" color="0,229,255" />
+          <Badge text="Base Network" color="0,255,136" />
+        </div>
+        <p style={{ color: DIM, fontSize: 13, lineHeight: 1.7 }}>
+          Set up your autonomous AI trading agent in minutes · Login via your own Telegram bot ·
+          Wallet auto-generated locally · Write your own strategy in plain English
+        </p>
+      </div>
+
+      {/* ── What's New Banner ── */}
+      <div style={{
+        background: 'linear-gradient(135deg, rgba(0,229,255,0.06), rgba(124,58,237,0.06))',
+        border: '1px solid rgba(0,229,255,0.2)',
+        borderRadius: 12, padding: '14px 20px', marginBottom: 36,
+        display: 'flex', alignItems: 'flex-start', gap: 14,
+      }}>
+        <span style={{ fontSize: 20 }}>🆕</span>
+        <div>
+          <h4 style={{ fontSize: 13, fontWeight: 700, color: CYAN, marginBottom: 6 }}>What's new in v1.0.10</h4>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 0' }}>
+            {[
+              ['✓ Login now works via your own Telegram bot', GREEN],
+              ['✓ Webhook auto-registered on login — no manual setup', GREEN],
+              ['✓ Wallet generated locally and never transmitted', GREEN],
+              ['✓ Custom skill support — write your own strategy in plain English', GOLD],
+              ['✓ Multi-skill support — load multiple strategies simultaneously', GOLD],
+              ['✓ All CLI messages now in English', CYAN],
+            ].map(([msg, color]) => (
+              <div key={msg} style={{ width: '50%', fontSize: 11, fontFamily: MONO, color, paddingRight: 12, marginBottom: 3 }}>{msg}</div>
+            ))}
+          </div>
+        </div>
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, alignItems: 'start' }}>
 
         {/* ── LEFT COLUMN ── */}
         <div>
 
-          {/* NEW FLOW: Telegram Login */}
-          <div style={{
-            background: 'linear-gradient(135deg, rgba(0,229,255,0.07), rgba(124,58,237,0.07))',
-            border: '1px solid rgba(0,229,255,0.3)',
-            borderRadius: 12, padding: 18, marginBottom: 24,
-          }}>
-            <h4 style={{ fontSize: 13, fontWeight: 700, color: '#00e5ff', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-              ⚡ Recommended — Login via Telegram
-            </h4>
-            <p style={{ fontSize: 12, color: '#8899aa', lineHeight: 1.7, marginBottom: 12 }}>
-              The fastest way to get started. Run {code('clawbid login')} in your terminal — it generates a one-time token.
-              Send that token to {code('@ClawBidBot')} on Telegram and your OpenClaw Key + Webhook ID are saved automatically.
-              No browser, no copy-pasting.
-            </p>
-            {[
-              ['Step 1', 'npm install -g clawbid-agent'],
-              ['Step 2', 'clawbid login  →  shows token CB-XXXX-XXXX'],
-              ['Step 3', 'Send /login CB-XXXX-XXXX  to @ClawBidBot'],
-              ['Auto-saved', 'openclaw_key + webhook_id saved locally'],
-              ['Step 4', 'clawbid init my-agent  →  wallet generated'],
-              ['Step 5', 'clawbid start  →  agent is live'],
-            ].map(([k, v]) => (
-              <InfoRow key={k} label={k} value={v} color="0,229,255" />
-            ))}
-          </div>
-
-          {/* Auto Wallet */}
-          <div style={{ background: 'rgba(0,255,136,0.05)', border: '1px solid rgba(0,255,136,0.2)', borderRadius: 12, padding: 16, marginBottom: 20 }}>
-            <h4 style={{ fontSize: 13, fontWeight: 700, color: '#00ff88', marginBottom: 8 }}>
-              🔐 Auto Wallet Generation
-            </h4>
-            <p style={{ fontSize: 12, color: '#3d4f6b', lineHeight: 1.65, marginBottom: 10 }}>
-              When you run {code('clawbid init')}, an Ethereum wallet is generated locally on your machine.
-              Your private key is <strong style={{ color: '#dde4f0' }}>never transmitted</strong> — only the public address is sent to ClawBid.
-            </p>
-            {[
-              ['Private Key', 'Stored in ~/.clawbid/ (never sent)'],
-              ['Public Address', 'Sent to ClawBid via webhook on init'],
-              ['Dashboard', 'Wallet + balance shown automatically'],
-              ['Telegram', 'Live trade alerts via @ClawBidBot'],
-            ].map(([k, v]) => (
-              <InfoRow key={k} label={k} value={v} color="0,255,136" />
-            ))}
-          </div>
-
-          {/* Bankr LLM */}
-          <div style={{ background: 'rgba(124,58,237,0.05)', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 12, padding: 16, marginBottom: 24 }}>
-            <h4 style={{ fontSize: 13, fontWeight: 700, color: '#a78bfa', marginBottom: 8 }}>
-              ⚡ Bankr LLM Gateway
-            </h4>
-            <p style={{ fontSize: 12, color: '#3d4f6b', lineHeight: 1.65, marginBottom: 10 }}>
-              Your agent uses Claude, Gemini, or GPT via Bankr's unified gateway with auto-failover.
-              24/7 uptime. Costs are paid in USDC from your agent wallet automatically.
-            </p>
-            {[
-              ['claude-sonnet-4-6', 'Primary — best reasoning for market analysis'],
-              ['gemini-flash', 'Fallback — faster & cheaper'],
-              ['gpt-4o-mini', 'Second fallback — wide availability'],
-            ].map(([m, d]) => (
-              <div key={m} style={{ display: 'flex', gap: 10, padding: '6px 0', borderBottom: '1px solid rgba(124,58,237,0.1)', fontSize: 11 }}>
-                <span style={{ color: '#00e5ff', fontFamily: 'IBM Plex Mono, monospace', minWidth: 160 }}>{m}</span>
-                <span style={{ color: '#3d4f6b' }}>{d}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Step List */}
-          {[
-            ['1', 'Install the SDK',
-              'Run: npm install -g clawbid-agent'],
-            ['2', 'Login via Telegram',
-              'Run: clawbid login — send the token to @ClawBidBot. Your OpenClaw Key and Webhook ID are saved automatically.'],
-            ['3', 'Initialize your agent',
-              'Run: clawbid init my-agent — an Ethereum wallet is generated locally. No manual wallet setup needed.'],
-            ['4', 'Add a skill strategy',
-              'Write your strategy in plain English as a .md file. Run: clawbid skill add ./strategy.md'],
-            ['5', 'Deposit USDC & start',
-              'Send USDC to your agent wallet on Base network. Then run: clawbid start — the agent trades autonomously.'],
-          ].map(([n, title, desc]) => (
-            <div key={n} style={{ display: 'flex', gap: 14, marginBottom: 20 }}>
-              <div style={{
-                minWidth: 30, height: 30, borderRadius: 8,
-                background: 'linear-gradient(135deg,#00e5ff,#7c3aed)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontWeight: 800, fontSize: 12, color: '#000', flexShrink: 0,
-              }}>{n}</div>
-              <div>
-                <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{title}</h4>
-                <p style={{ fontSize: 12, color: '#3d4f6b', lineHeight: 1.65 }}>{desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* ── RIGHT COLUMN: Code Blocks ── */}
-        <div>
-
-          <CodeBlock title="Terminal — Install & Login" lines={[
-            '# Step 1: Install the CLI',
+          {/* Step 1 */}
+          <SectionHeader number="1" title="Install the CLI" subtitle="Requires Node.js 18+. Install once, works on Linux, macOS, and Windows." />
+          <CodeBlock title="bash — Install" lines={[
             'npm install -g clawbid-agent',
             '',
-            '# Step 2: Login via Telegram (recommended)',
-            'clawbid login',
+            '# Verify installation',
+            'clawbid --version',
+            '✓ 1.0.10',
             '',
-            '# Your terminal shows:',
-            '# ┌─────────────────────────────────┐',
-            '#   Send to @ClawBidBot on Telegram:',
-            '#   /login CB-A3F9-X7KL',
-            '# └─────────────────────────────────┘',
-            '',
-            '# After sending the token to @ClawBidBot:',
-            '✓ Telegram confirmed!',
-            '✓ OpenClaw Key saved:  ocl_xxxxxxxxxxxx',
-            '✓ Webhook ID saved:    d96dbea93a09...',
-            '✓ Webhook URL saved:   https://api.clawbid.io/wh/...',
+            '# See all commands',
+            'clawbid --help',
           ]} />
 
-          <CodeBlock title="Terminal — Init Agent" lines={[
-            '# Step 3: Initialize your agent',
-            '# (webhook auto-loaded from login)',
+          {/* Step 2 */}
+          <SectionHeader number="2" title="Login via your Telegram Bot" color={GREEN}
+            subtitle="Use your own Telegram bot (from @BotFather). ClawBid registers a webhook on it automatically — no manual configuration needed." />
+
+          <div style={{ background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(0,255,136,0.15)', borderRadius: 10, padding: 14, marginBottom: 14, fontSize: 12, color: DIM, lineHeight: 1.7 }}>
+            <strong style={{ color: '#dde4f0' }}>Don't have a bot yet?</strong> Open Telegram → search{' '}
+            {code('@BotFather')} → send {code('/newbot')} → follow the steps → copy the token.
+            It takes about 60 seconds.
+          </div>
+
+          <CodeBlock title="bash — Login" lines={[
+            'clawbid login',
+            '',
+            '# Enter your bot token when prompted:',
+            '# Enter your Bot Token: 7968633890:AAFGBuTEJ-...',
+            '',
+            '✓ Bot @yourbotname verified!',
+            '✓ New account created for this bot',
+            '',
+            '# STEP 1 — Open your bot on Telegram and type:',
+            '/confirm CB-XXXX-XXXX',
+            '',
+            '✓ Confirmation received from bot @yourbotname!',
+            '✓ Wallet generated',
+            '✓ Logged in as bot @yourbotname',
+            '',
+            '  OpenClaw Key:  ocl_xxxxxxxxxxxx',
+            '  Webhook ID:    d96dbea93a09...',
+            '  Wallet:        0x3f4a8b2c...1d9e',
+          ]} />
+
+          {/* Step 3 */}
+          <SectionHeader number="3" title="Initialize your Agent" color={PURPLE}
+            subtitle="Creates your agent config and registers it with the ClawBid platform. Wallet is reused from login." />
+
+          <CodeBlock title="bash — Init" lines={[
             'clawbid init my-agent',
             '',
-            '✓ Generating wallet keypair...',
-            '✓ Agent ID:   my-agent-3f4a8b',
-            '✓ Wallet:     0x3f4a8b2c...1d9e  (local only)',
-            '✓ PK saved:   ~/.clawbid/my-agent.json',
-            '✓ Webhook:    api.clawbid.io/wh/d96dbea...',
-            '✓ LLM Model:  claude-sonnet-4-6 → gemini-flash',
-            '✓ Dashboard synced — wallet visible now',
+            '✓ Agent initialized!',
+            '',
+            '  Agent ID:    my-agent-3f4a8b',
+            '  Webhook ID:  6a81b2ce2ee69b...',
+            '  Wallet:      0xdEE0A83C84d4F0... (Base network)',
+            '  LLM Model:   claude-sonnet-4-6 → fallback: gemini-flash',
+            '  Config:      /home/user/.clawbid/config.json',
             '',
             '# Check your credentials anytime:',
             'clawbid whoami',
           ]} />
 
-          <CodeBlock title="Terminal — Add Skill & Start" lines={[
-            '# Step 4: Add your trading strategy',
-            'clawbid skill add ./trend-momentum.md',
-            '✓ Skill loaded: trend-momentum v1.0',
+          {/* Step 4 */}
+          <SectionHeader number="4" title="Add a Skill Strategy" color={GOLD}
+            subtitle="Your skill is a plain-text Markdown file. Write your trading logic in plain English — the AI agent reads and follows it." />
+
+          <div style={{ background: 'rgba(251,191,36,0.04)', border: '1px solid rgba(251,191,36,0.15)', borderRadius: 10, padding: 14, marginBottom: 14, fontSize: 12, color: DIM, lineHeight: 1.7 }}>
+            Skills tell the AI <strong style={{ color: '#dde4f0' }}>when to bet YES, when to bet NO, and when to skip.</strong>{' '}
+            The more specific your conditions, the smarter the agent. You can load multiple skills at once.
+          </div>
+
+          <CodeBlock title="bash — Add skill" lines={[
+            '# Add a skill from a .md file',
+            'clawbid skill add ./my-strategy.md',
+            '',
+            '✓ Skill loaded: my-strategy v1.0.0',
             '  Assets:     BTC, ETH, SOL',
             '  Timeframes: 30m, 1h',
+            '  Total skills loaded: 1',
             '',
-            '# Step 5: Deposit USDC to your wallet on Base',
-            '# Address: 0x3f4a8b2c...1d9e',
+            '# Load multiple skills',
+            'clawbid skill add ./momentum.md',
+            'clawbid skill add ./contrarian.md',
             '',
-            '# Step 6: Start autonomous trading',
-            'clawbid start --tf=30m,1h,6h,12h',
+            '# See loaded skills',
+            'clawbid skill list',
+          ]} />
+
+          {/* Step 5 */}
+          <SectionHeader number="5" title="Deposit USDC & Start" color={GREEN}
+            subtitle="Send USDC to your agent wallet on Base network. Then start — the agent trades every 2 minutes autonomously." />
+
+          <CodeBlock title="bash — Start" lines={[
+            '# Deposit USDC to your wallet on Base:',
+            '# 0xdEE0A83C84d4F0288d68c2dbF7FE961131b2afDb',
+            '',
+            '# Start the agent (live trading)',
+            'clawbid start',
+            '',
+            '# Or test without spending real funds:',
+            'clawbid start --dry-run',
             '',
             '🦀 ClawBid Agent Starting...',
             '  Agent:   my-agent-3f4a8b',
             '  Mode:    LIVE',
+            '  Skills:  2 loaded',
             '',
-            '[10:42:01] ↑ YES BTC/30m $12.00 [claude-sonnet-4-6]',
-            '[10:44:03] ↓ NO  ETH/1h  $8.50  [gemini-flash]',
-            '[10:46:11] ↑ YES SOL/30m $6.00  [claude-sonnet-4-6]',
+            '[10:42:01] ↑ YES  BTC/30m  $12.00  [claude-sonnet-4-6]',
+            '[10:44:03] ↓ NO   ETH/1h   $8.50   [gemini-flash]',
+            '[10:46:11] ↑ YES  SOL/30m  $6.00   [claude-sonnet-4-6]',
           ]} />
 
-          <CodeBlock title="trend-momentum.md — Example Strategy" lines={[
-            '---',
-            'name: trend-momentum',
-            'version: 1.0.0',
-            'markets: [BTC, ETH, SOL]',
-            'timeframes: [30m, 1h]',
-            '---',
-            '',
-            '# Strategy: Trend Momentum',
-            '',
-            'Vote YES when RSI > 55 and price is above 20-period MA.',
-            'Vote NO when RSI < 45 and price is below 20-period MA.',
-            'Skip when RSI is between 45 and 55 (no clear signal).',
-            '',
-            'Risk management: max 4% per trade, stop loss at -8%.',
-            'Avoid trading within 5 minutes of major news events.',
-          ]} />
+        </div>
 
-          {/* Manual flow note */}
+        {/* ── RIGHT COLUMN ── */}
+        <div>
+
+          {/* Login flow info */}
           <div style={{
-            background: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            borderRadius: 10, padding: 14, marginTop: 4,
+            background: 'linear-gradient(135deg, rgba(0,229,255,0.07), rgba(124,58,237,0.07))',
+            border: '1px solid rgba(0,229,255,0.25)',
+            borderRadius: 12, padding: 18, marginBottom: 20,
           }}>
-            <p style={{ fontSize: 11, color: '#3d4f6b', lineHeight: 1.7, margin: 0 }}>
-              <strong style={{ color: '#dde4f0' }}>Manual setup (alternative):</strong>
-              {' '}If you prefer not to use Telegram login, go to the Dashboard tab → "Generate new webhook" → paste your OpenClaw key → then run:{' '}
-              <code style={{ color: '#00e5ff', fontFamily: 'IBM Plex Mono, monospace', fontSize: 11 }}>
+            <h4 style={{ fontSize: 13, fontWeight: 700, color: CYAN, marginBottom: 10 }}>
+              ⚡ How the Telegram Login Works
+            </h4>
+            {[
+              ['Run clawbid login', 'CLI asks for your bot token'],
+              ['Token sent to backend', 'Backend verifies bot with Telegram'],
+              ['Webhook auto-registered', 'Your bot receives /confirm messages'],
+              ['Type /confirm in your bot', 'Backend confirms and saves credentials'],
+              ['Credentials saved locally', 'OpenClaw Key + Webhook ID stored'],
+              ['Wallet auto-generated', 'Private key stored only on your machine'],
+            ].map(([k, v]) => <InfoRow key={k} label={k} value={v} color="0,229,255" />)}
+          </div>
+
+          {/* Wallet security */}
+          <div style={{ background: 'rgba(0,255,136,0.05)', border: '1px solid rgba(0,255,136,0.2)', borderRadius: 12, padding: 16, marginBottom: 20 }}>
+            <h4 style={{ fontSize: 13, fontWeight: 700, color: GREEN, marginBottom: 8 }}>
+              🔐 Wallet Security
+            </h4>
+            <p style={{ fontSize: 12, color: DIM, lineHeight: 1.65, marginBottom: 10 }}>
+              Your private key is <strong style={{ color: '#dde4f0' }}>generated and stored locally</strong> on your machine.
+              It is encrypted and never sent to ClawBid servers.
+            </p>
+            {[
+              ['Private Key', 'Encrypted in ~/.clawbid/ (never transmitted)'],
+              ['Public Address', 'Shared with platform on init'],
+              ['Deposits', 'USDC on Base network to your wallet'],
+              ['Payouts', 'Sent directly to your wallet address'],
+            ].map(([k, v]) => <InfoRow key={k} label={k} value={v} color="0,255,136" />)}
+          </div>
+
+          {/* LLM Gateway */}
+          <div style={{ background: 'rgba(124,58,237,0.05)', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 12, padding: 16, marginBottom: 20 }}>
+            <h4 style={{ fontSize: 13, fontWeight: 700, color: PURPLE, marginBottom: 8 }}>
+              ⚡ AI Models (via Bankr LLM Gateway)
+            </h4>
+            <p style={{ fontSize: 12, color: DIM, lineHeight: 1.65, marginBottom: 10 }}>
+              Your agent uses Claude as primary, with automatic failover. Costs are paid in USDC from your agent wallet.
+            </p>
+            {[
+              ['claude-sonnet-4-6', 'Primary — best market reasoning', CYAN],
+              ['gemini-flash', 'Fallback 1 — fast & cheap', GREEN],
+              ['gpt-4o-mini', 'Fallback 2 — wide availability', GOLD],
+            ].map(([m, d, c]) => (
+              <div key={m} style={{ display: 'flex', gap: 10, padding: '6px 0', borderBottom: '1px solid rgba(124,58,237,0.1)', fontSize: 11 }}>
+                <span style={{ color: c, fontFamily: MONO, minWidth: 170 }}>{m}</span>
+                <span style={{ color: DIM }}>{d}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* ── SKILL SECTION ── */}
+          <div style={{ background: 'rgba(251,191,36,0.04)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: 12, padding: 18, marginBottom: 20 }}>
+            <h4 style={{ fontSize: 14, fontWeight: 700, color: GOLD, marginBottom: 4 }}>
+              📋 Write Your Own Skill
+            </h4>
+            <p style={{ fontSize: 12, color: DIM, lineHeight: 1.65, marginBottom: 14 }}>
+              A skill is a <strong style={{ color: '#dde4f0' }}>.md file</strong> with a YAML header and your strategy in plain English.
+              The AI agent reads your instructions and applies them to real market data every trading cycle.
+              No code required — just clear logic.
+            </p>
+
+            {/* Skill structure */}
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, fontFamily: MONO, color: DIM, marginBottom: 8 }}>Required structure:</div>
+              {[
+                ['name', 'Unique skill identifier (no spaces)', CYAN],
+                ['version', 'Semantic version e.g. 1.0.0', DIM],
+                ['markets', 'Assets: [BTC, ETH, SOL, BNB, AVAX ...]', GREEN],
+                ['timeframes', 'Windows: [30m, 1h, 6h, 12h]', PURPLE],
+                ['Signal YES/NO', 'Conditions for each direction', GOLD],
+                ['Risk rules', 'Position size, confidence threshold', '#ff6b6b'],
+              ].map(([k, v, c]) => (
+                <div key={k} style={{ display: 'flex', padding: '5px 0', borderBottom: '1px solid rgba(251,191,36,0.08)', fontSize: 11, fontFamily: MONO }}>
+                  <span style={{ color: c, minWidth: 130 }}>{k}</span>
+                  <span style={{ color: DIM }}>{v}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Example skill tabs */}
+            <div style={{ fontSize: 11, fontFamily: MONO, color: DIM, marginBottom: 8 }}>Example skills:</div>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+              {SKILL_EXAMPLES.map((s, i) => (
+                <button key={i} onClick={() => setActiveSkill(i)} style={{
+                  padding: '4px 12px', borderRadius: 6, cursor: 'pointer', fontSize: 10, fontFamily: MONO,
+                  background: activeSkill === i ? `rgba(${s.color},0.15)` : 'rgba(255,255,255,0.03)',
+                  border: `1px solid rgba(${s.color}, ${activeSkill === i ? '0.5' : '0.15'})`,
+                  color: activeSkill === i ? `rgb(${s.color})` : DIM,
+                  transition: 'all 0.15s',
+                }}>{s.label}</button>
+              ))}
+            </div>
+
+            <div style={{ background: '#080e1d', borderRadius: 8, padding: 14, fontFamily: MONO, fontSize: 11, lineHeight: 1.85 }}>
+              {SKILL_EXAMPLES[activeSkill].code.map((line, i) => {
+                if (line.startsWith('---')) return <div key={i} style={{ color: '#3d4f6b' }}>{line}</div>;
+                if (line.startsWith('name:') || line.startsWith('version:') || line.startsWith('markets:') || line.startsWith('timeframes:'))
+                  return <div key={i} style={{ color: PURPLE }}>{line}</div>;
+                if (line.startsWith('#')) return <div key={i} style={{ color: GOLD, fontWeight: 700 }}>{line}</div>;
+                if (line.startsWith('- ')) return <div key={i} style={{ color: '#dde4f0' }}>{line}</div>;
+                if (line === '') return <br key={i} />;
+                return <div key={i} style={{ color: DIM }}>{line}</div>;
+              })}
+            </div>
+          </div>
+
+          {/* Tips */}
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 14, marginBottom: 14 }}>
+            <h4 style={{ fontSize: 12, fontWeight: 700, color: '#dde4f0', marginBottom: 10 }}>💡 Tips for Better Skills</h4>
+            {[
+              ['Be specific', 'Define exact conditions (RSI > 65, not "RSI is high")'],
+              ['Set thresholds', 'Always include a minimum confidence % to skip bad trades'],
+              ['Keep it simple', 'One clear idea per skill beats complex multi-condition logic'],
+              ['Use dry-run', 'Test with clawbid start --dry-run before going live'],
+              ['Stack skills', 'Load 2-3 complementary skills to cover more market conditions'],
+            ].map(([tip, desc]) => (
+              <div key={tip} style={{ display: 'flex', gap: 10, marginBottom: 8, fontSize: 11 }}>
+                <span style={{ color: CYAN, fontFamily: MONO, minWidth: 100, flexShrink: 0 }}>{tip}</span>
+                <span style={{ color: DIM, lineHeight: 1.6 }}>{desc}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Manual setup note */}
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 14 }}>
+            <p style={{ fontSize: 11, color: DIM, lineHeight: 1.7, margin: 0 }}>
+              <strong style={{ color: '#dde4f0' }}>Manual setup (alternative):</strong>{' '}
+              If you prefer not to use Telegram login, go to the Dashboard tab → "Generate new webhook" → copy your webhook URL → then run:{' '}
+              <code style={{ color: CYAN, fontFamily: MONO, fontSize: 11 }}>
                 clawbid init my-agent --webhook YOUR_WEBHOOK_URL
               </code>
             </p>
