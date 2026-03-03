@@ -20,8 +20,10 @@ function BetModal({ market, onClose, onBet }) {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-  const totalPool = (market.yes_pool || 0) + (market.no_pool || 0);
-  const yesPct = totalPool > 0 ? Math.round((market.yes_pool / totalPool) * 100) : 50;
+  const yesPool = parseFloat(market.yes_pool || 0);
+  const noPool = parseFloat(market.no_pool || 0);
+  const totalPool = yesPool + noPool;
+  const yesPct = totalPool > 0 ? Math.round((yesPool / totalPool) * 100) : 50;
   const noPct = 100 - yesPct;
 
   const handleBet = async () => {
@@ -140,7 +142,13 @@ function BetModal({ market, onClose, onBet }) {
           <div style={{ background: 'rgba(0,229,255,0.05)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 12, fontFamily: 'IBM Plex Mono, monospace' }}>
             <span style={{ color: '#3d4f6b' }}>Est. payout if {direction}: </span>
             <span style={{ color: '#00e5ff' }}>
-              ~${(parseFloat(amount) * (direction === 'YES' ? (totalPool + parseFloat(amount)) / Math.max(market.yes_pool + parseFloat(amount), 1) : (totalPool + parseFloat(amount)) / Math.max(market.no_pool + parseFloat(amount), 1))).toFixed(2)} USDC
+              ~${(() => {
+                const amt = parseFloat(amount);
+                const newTotal = totalPool + amt;
+                const newPool = direction === 'YES' ? yesPool + amt : noPool + amt;
+                const payout = newPool > 0 ? (amt / newPool) * newTotal * 0.98 : amt;
+                return payout.toFixed(2);
+              })()} USDC
             </span>
           </div>
         )}
@@ -179,8 +187,10 @@ function MarketCard({ market, onBetClick, userPosition }) {
     return () => clearInterval(t);
   }, [market.closes_at]);
 
-  const totalPool = (market.yes_pool || 0) + (market.no_pool || 0);
-  const yesPct = totalPool > 0 ? Math.round((market.yes_pool / totalPool) * 100) : 50;
+  const yesPool = parseFloat(market.yes_pool || 0);
+  const noPool = parseFloat(market.no_pool || 0);
+  const totalPool = yesPool + noPool;
+  const yesPct = totalPool > 0 ? Math.round((yesPool / totalPool) * 100) : 50;
   const noPct = 100 - yesPct;
   const humanBets = market.human_count || 0;
   const aiBets = market.agent_count || 0;
