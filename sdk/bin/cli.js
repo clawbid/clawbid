@@ -403,7 +403,7 @@ program
 
   ${chalk.yellow('Next steps:')}
   1. ${chalk.cyan('clawbid skill add ./my-strategy.md')}
-  2. Deposit USDC to: ${chalk.cyan(wallet.address)} ${chalk.gray('(Base network)')}
+  2. Deposit USDC to: ${chalk.cyan(walletAddress)} ${chalk.gray('(Base network)')}
   3. ${chalk.cyan('clawbid start')}
 `);
 
