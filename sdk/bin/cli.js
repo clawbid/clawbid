@@ -258,12 +258,15 @@ program
       const keystoreDir = path.join(require('os').homedir(), '.clawbid');
       if (!fs.existsSync(keystoreDir)) fs.mkdirSync(keystoreDir, { mode: 0o700 });
       const keystorePath = path.join(keystoreDir, `${name}.json`);
-      const encrypted = crypto.createCipher('aes-256-cbc', wallet.address);
+      const iv = crypto.randomBytes(16);
+      const key = crypto.scryptSync(wallet.address, 'clawbid-salt', 32);
+      const encrypted = crypto.createCipheriv('aes-256-cbc', key, iv);
       let encryptedPK = encrypted.update(wallet.privateKey, 'utf8', 'hex');
       encryptedPK += encrypted.final('hex');
       fs.writeFileSync(keystorePath, JSON.stringify({
         address: wallet.address,
-        encrypted_pk: encryptedPK
+        encrypted_pk: encryptedPK,
+        iv: iv.toString('hex')
       }), { mode: 0o600 });
 
       // Register with ClawBid platform via webhook
