@@ -70,7 +70,7 @@ export default function Home() {
 
       {/* Human Trading — bet YES/NO against AI agents */}
       {tab === 'trade' && (
-        <Markets prices={prices} />
+        <Markets markets={markets} prices={prices} />
       )}
 
       {/* Human vs AI Leaderboard */}
