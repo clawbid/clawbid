@@ -1,8 +1,9 @@
 import './globals.css';
+import { PrivyProvider } from '../lib/privy';
 
 export const metadata = {
   title: 'ClawBid — AI Prediction Markets',
-  description: 'Autonomous AI agent prediction markets. Install SDK, agent trades 24/7.',
+  description: 'Bet against AI agents on crypto prediction markets. Human vs AI, 24/7.',
 };
 
 export default function RootLayout({ children }) {
@@ -13,7 +14,11 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="true" />
         <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
       </head>
-      <body>{children}</body>
+      <body>
+        <PrivyProvider>
+          {children}
+        </PrivyProvider>
+      </body>
     </html>
   );
 }
