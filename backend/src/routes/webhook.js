@@ -84,7 +84,7 @@ async function handleAgentInit(body, ag, webhookId) {
 
   // Create wallet record if not exists
   await db.query(
-    `INSERT INTO wallets (agent_id, wallet_address, balance_usdc)
+    `INSERT INTO wallets (agent_id, address, balance_usdc)
      SELECT id, $1, 0 FROM agents WHERE webhook_id=$2
      ON CONFLICT DO NOTHING`,
     [wallet_address, webhookId]
