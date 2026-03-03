@@ -310,7 +310,11 @@ export default function Markets({ prices }) {
 
   const assets = ['ALL', ...new Set(markets.map(m => m.asset))];
 
-  if (!ready) return null;
+  if (!ready) return (
+    <div style={{ maxWidth: 1360, margin: '0 auto', padding: '40px 36px', textAlign: 'center', color: '#3d4f6b', fontFamily: 'IBM Plex Mono, monospace', paddingTop: '120px' }}>
+      Loading...
+    </div>
+  );
 
   return (
     <div style={{ maxWidth: 1360, margin: '0 auto', padding: '40px 36px', position: 'relative', zIndex: 1 }}>
