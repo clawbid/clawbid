@@ -56,31 +56,31 @@ program
 // ── clawbid login ────────────────────────────────────────────────────────────
 program
   .command('login')
-  .description('Login menggunakan Telegram Bot kamu yang sudah dikonfigurasi OpenClaw')
-  .option('--timeout <seconds>', 'Detik menunggu konfirmasi', '120')
+  .description('Login using your Telegram Bot configured with OpenClaw')
+  .option('--timeout <seconds>', 'Seconds to wait for confirmation', '120')
   .action(async (opts) => {
     console.log(logo);
-    console.log(chalk.bold('  Login via Telegram Bot kamu\n'));
-    console.log(chalk.gray('  Bot Telegram kamu yang sudah terhubung OpenClaw\n'));
+    console.log(chalk.bold('  Login via your Telegram Bot\n'));
+    console.log(chalk.gray('  Your Telegram Bot connected to OpenClaw\n'));
 
     // Minta bot token dari user
     const readline = require('readline');
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
     
     const botToken = await new Promise((resolve) => {
-      rl.question(chalk.bold('  Masukkan Bot Token kamu: '), (answer) => {
+      rl.question(chalk.bold('  Enter your Bot Token: '), (answer) => {
         rl.close();
         resolve(answer.trim());
       });
     });
 
     if (!botToken || !botToken.includes(':')) {
-      console.log(chalk.red('\n  ❌ Bot token tidak valid. Format: 123456:ABC...\n'));
-      console.log(chalk.gray('  Dapatkan bot token dari @BotFather di Telegram\n'));
+      console.log(chalk.red('\n  ❌ Invalid bot token. Format: 123456:ABC...\n'));
+      console.log(chalk.gray('  Get your bot token from @BotFather on Telegram\n'));
       process.exit(1);
     }
 
-    const spinner = ora('Memverifikasi bot token ke Telegram...').start();
+    const spinner = ora('Verifying bot token with Telegram...').start();
 
     try {
       // Step 1: Kirim bot token ke backend untuk diverifikasi
@@ -93,21 +93,21 @@ program
 
       // Step 2: Tampilkan instruksi
       console.log();
-      console.log(chalk.green(`  ✓ Bot @${bot_username} (${bot_name}) terverifikasi!`));
+      console.log(chalk.green(`  ✓ Bot @${bot_username} (${bot_name}) verified!`));
       console.log();
       
       if (is_new_user) {
-        console.log(chalk.cyan('  ✨ Akun baru akan dibuat untuk bot ini'));
+        console.log(chalk.cyan('  ✨ New account will be created for this bot'));
       } else {
-        console.log(chalk.cyan('  ♻️  Menggunakan akun yang sudah ada'));
+        console.log(chalk.cyan('  ♻️  Using existing account'));
       }
       console.log();
 
       if (message_sent) {
-        console.log(chalk.bgGreen.black.bold(' STEP 1 ') + chalk.bold(` Pesan konfirmasi sudah dikirim ke bot @${bot_username} kamu!\n`));
-        console.log(chalk.gray('  Buka Telegram → cari bot kamu → ketik:'));
+        console.log(chalk.bgGreen.black.bold(' STEP 1 ') + chalk.bold(` Confirmation message sent to bot @${bot_username} kamu!\n`));
+        console.log(chalk.gray('  Open Telegram → find your bot → type:'));
       } else {
-        console.log(chalk.bgCyan.black.bold(' STEP 1 ') + chalk.bold(` Buka bot @${bot_username} kamu di Telegram dan ketik:\n`));
+        console.log(chalk.bgCyan.black.bold(' STEP 1 ') + chalk.bold(` Open bot @${bot_username} on Telegram and type:\n`));
       }
 
       console.log(chalk.bgWhite.black(`  /confirm ${token}  `));
@@ -116,32 +116,32 @@ program
       console.log();
 
       // Step 3: Poll untuk konfirmasi
-      const pollSpinner = ora('Menunggu konfirmasi dari bot kamu...').start();
+      const pollSpinner = ora('Waiting for confirmation from your bot...').start();
       const timeout = parseInt(opts.timeout) * 1000;
       const startTime = Date.now();
 
       const result = await new Promise((resolve, reject) => {
         const poll = async () => {
           if (Date.now() - startTime > timeout) {
-            return reject(new Error(`Timeout setelah ${opts.timeout}s. Token expired.`));
+            return reject(new Error(`Timeout after ${opts.timeout}s. Token expired.`));
           }
           try {
             const res = await axios.get(`${CLAWBID_API}/api/auth/telegram-login-poll/${token}`, { timeout: 5000 });
             if (res.data.status === 'confirmed') return resolve(res.data);
-            if (res.data.status === 'expired') return reject(new Error('Token expired. Jalankan clawbid login lagi.'));
+            if (res.data.status === 'expired') return reject(new Error('Token expired. Run clawbid login again.'));
             const remaining = parseInt(opts.timeout) - Math.floor((Date.now() - startTime) / 1000);
-            pollSpinner.text = `Menunggu konfirmasi dari bot @${bot_username}... (${remaining}s)`;
+            pollSpinner.text = `Waiting for confirmation from bot @${bot_username}... (${remaining}s)`;
           } catch (err) {
-            if (err.response?.status === 404) return reject(new Error('Token tidak valid.'));
+            if (err.response?.status === 404) return reject(new Error('Invalid token.'));
           }
           setTimeout(poll, 3000);
         };
         poll();
       });
 
-      pollSpinner.succeed(chalk.green(`✓ Konfirmasi diterima dari bot @${bot_username}!`));
+      pollSpinner.succeed(chalk.green(`✓ Confirmation received from bot @${bot_username}!`));
 
-      // Step 4: Simpan credentials
+      // Step 4: Saving credentials
       const { openclaw_key, webhook_id, webhook_url } = result;
       config.set('openclaw_key', openclaw_key);
       config.set('webhook_id', webhook_id);
@@ -171,24 +171,24 @@ program
 
       config.set('wallet_address', wallet.address);
       config.set('wallet_keystore', keystorePath);
-      walletSpinner.succeed(chalk.green('✓ Wallet di-generate!'));
+      walletSpinner.succeed(chalk.green('✓ Wallet generated!'));
 
-      // Kirim info wallet ke bot user
+      // Send wallet info to bot user
       await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         chat_id: result.owner_chat_id || '',
         text:
-          `💼 *Wallet Agent Kamu*\n\n` +
+          `💼 *Your Agent Wallet*\n\n` +
           `Address: \`${wallet.address}\`\n\n` +
-          `_Private key disimpan terenkripsi di lokal device kamu._\n\n` +
-          `Deposit USDC ke address ini di Base network untuk mulai trading.`,
+          `_Private key stored encrypted on your local device._\n\n` +
+          `Deposit USDC to this address on Base network to start trading.`,
         parse_mode: 'Markdown'
       }, { timeout: 5000 }).catch(() => {});
 
       // Tampilkan hasil
       console.log();
-      console.log(chalk.green(`  ✓ Login sebagai bot @${bot_username}`));
+      console.log(chalk.green(`  ✓ Logged in as bot @${bot_username}`));
       console.log();
-      console.log(chalk.bold('  Credentials tersimpan lokal:'));
+      console.log(chalk.bold('  Credentials saved locally:'));
       console.log();
       console.log(`  ${chalk.bold('Bot:')}           ${chalk.cyan('@' + bot_username)}`);
       console.log(`  ${chalk.bold('OpenClaw Key:')} ${chalk.cyan(openclaw_key)}`);
@@ -202,11 +202,11 @@ program
       console.log();
 
     } catch (err) {
-      spinner.fail(chalk.red('Login gagal: ' + err.message));
+      spinner.fail(chalk.red('Login failed: ' + err.message));
       if (err.response?.status === 401) {
-        console.log(chalk.gray('\n  Bot token tidak valid. Cek token dari @BotFather.\n'));
+        console.log(chalk.gray('\n  Invalid bot token. Check your token from @BotFather.\n'));
       } else if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
-        console.log(chalk.gray('\n  Tidak bisa reach ClawBid API. Cek koneksi internet.\n'));
+        console.log(chalk.gray('\n  Cannot reach ClawBid API. Check your internet connection.\n'));
       }
       process.exit(1);
     }
@@ -226,12 +226,12 @@ program
     const walletAddress = config.get('wallet_address');
 
     if (!openclawKey) {
-      console.log(chalk.yellow('Belum login. Jalankan: clawbid login'));
+      console.log(chalk.yellow('Not logged in. Run: clawbid login'));
       return;
     }
 
     console.log();
-    console.log(chalk.bold('  Session Aktif:'));
+    console.log(chalk.bold('  Active Session:'));
     console.log();
     if (botUsername) console.log(`  Bot:           ${chalk.cyan('@' + botUsername)}`);
     console.log(`  OpenClaw Key:  ${chalk.cyan(openclawKey)}`);
