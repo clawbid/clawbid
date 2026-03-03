@@ -1,6 +1,6 @@
 /**
  * Webhook Routes
- * Handles: agent events, bot /confirm command dari user bot mereka
+ * Handles: agent events, bot /confirm command from user bots
  */
 
 const express = require('express');
@@ -9,7 +9,7 @@ const crypto = require('crypto');
 const axios = require('axios');
 const db = require('../db');
 
-// Import loginTokens dari auth
+// Import loginTokens from auth
 let loginTokens = null;
 try {
   const authRoute = require('./auth');
@@ -18,13 +18,13 @@ try {
 
 /**
  * POST /wh/:webhookId
- * Main agent webhook — terima events dari SDK
+ * Main agent webhook — receive events from SDK
  */
 router.post('/:webhookId', async (req, res) => {
   const { webhookId } = req.params;
   const { event } = req.body;
 
-  // Handle Telegram bot webhook (untuk /confirm dari bot user)
+  // Handle Telegram bot webhook (for /confirm from user bot)
   // Format: POST /wh/tgbot-<bot_id>
   if (webhookId.startsWith('tgbot-')) {
     return handleTelegramWebhook(req, res, webhookId);
@@ -92,12 +92,12 @@ async function handleAgentInit(body, ag, webhookId) {
 }
 
 /**
- * Handle Telegram webhook dari bot user
- * Ini dipanggil ketika user ketik /confirm <token> di bot mereka sendiri
+ * Handle Telegram webhook from user bot
+ * Called when user types /confirm <token> in their own bot
  */
 async function handleTelegramWebhook(req, res, webhookId) {
   const update = req.body;
-  res.json({ ok: true }); // Selalu reply 200 ke Telegram
+  res.json({ ok: true }); // Always reply 200 to Telegram
 
   const message = update.message;
   if (!message?.text) return;
@@ -114,13 +114,13 @@ async function handleTelegramWebhook(req, res, webhookId) {
 
     const data = loginTokens.get(token);
     if (!data) {
-      // Token tidak ditemukan
+      // Token not found
       const botToken = webhookId.replace('tgbot-', '').replace(/-/g, ':');
-      await sendTelegramMsg(botToken, chatId, '❌ Token tidak ditemukan atau sudah expired.\n\nJalankan `clawbid login` lagi di terminal.');
+      await sendTelegramMsg(botToken, chatId, '❌ Token not found or already expired.\n\nRun `clawbid login` again in your terminal.');
       return;
     }
 
-    // Konfirmasi via internal API
+    // Confirm via internal API
     try {
       await axios.post(`${process.env.BACKEND_URL || 'http://localhost:4000'}/api/auth/bot-confirm`, {
         token,
@@ -140,7 +140,7 @@ async function handleTelegramWebhook(req, res, webhookId) {
     if (token && loginTokens?.has(token)) {
       loginTokens.set(token, { ...loginTokens.get(token), status: 'expired' });
       const botToken = webhookId.replace('tgbot-', '').replace(/-/g, ':');
-      await sendTelegramMsg(botToken, chatId, '🚫 Login request ditolak.');
+      await sendTelegramMsg(botToken, chatId, '🚫 Login request denied.');
     }
     return;
   }
