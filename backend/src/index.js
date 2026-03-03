@@ -79,15 +79,19 @@ httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`🦀 ClawBid backend running on port ${PORT}`);
 });
 
+// Connect to DB with retry, then start cron
 db.connect()
-  .then(() => console.log('✓ Database connected'))
-  .catch(err => console.error('⚠ DB error:', err.message));
-
-try {
-  cron.start(wsManager);
-  console.log('✓ Cron jobs started');
-} catch(err) {
-  console.error('⚠ Cron error:', err.message);
-}
+  .then(() => {
+    try {
+      cron.start(wsManager);
+      console.log('✓ Cron jobs started');
+    } catch(err) {
+      console.error('⚠ Cron error:', err.message);
+    }
+  })
+  .catch(err => {
+    console.error('✗ DB connection failed after all retries:', err.message);
+    process.exit(1); // Force Railway to restart the container
+  });
 
 process.on('SIGTERM', () => httpServer.close(() => process.exit(0)));

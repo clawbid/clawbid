@@ -9,9 +9,34 @@ const fs = require('fs');
 const { ethers } = require('ethers');
 const crypto = require('crypto');
 const axios = require('axios');
-const Conf = require('conf');
 
-const config = new Conf({ projectName: 'clawbid' });
+// Fix for conf ESM issue — use manual JSON config instead
+const os = require('os');
+const CONFIG_DIR = path.join(os.homedir(), '.clawbid');
+const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
+
+function loadConfig() {
+  try {
+    if (!fs.existsSync(CONFIG_DIR)) fs.mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
+    if (!fs.existsSync(CONFIG_FILE)) return {};
+    return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+  } catch { return {}; }
+}
+
+function saveConfig(data) {
+  if (!fs.existsSync(CONFIG_DIR)) fs.mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify(data, null, 2), { mode: 0o600 });
+}
+
+const config = {
+  _data: null,
+  _load() { if (!this._data) this._data = loadConfig(); return this._data; },
+  get(key) { return this._load()[key]; },
+  set(key, value) { const d = this._load(); d[key] = value; saveConfig(d); },
+  clear() { this._data = {}; saveConfig({}); },
+  get path() { return CONFIG_FILE; }
+};
+
 const CLAWBID_API = process.env.CLAWBID_API || 'https://api.clawbid.site';
 
 const logo = chalk.cyan(`
@@ -116,6 +141,32 @@ program
       config.set('telegram_username', telegram_username);
       config.set('logged_in_at', new Date().toISOString());
 
+      // ── AUTO GENERATE WALLET ─────────────────────────────────────────────
+      const walletSpinner = ora('Auto-generating wallet...').start();
+      const wallet = ethers.Wallet.createRandom();
+
+      // Save encrypted PK to ~/.clawbid/
+      const keystoreDir = path.join(os.homedir(), '.clawbid');
+      if (!fs.existsSync(keystoreDir)) fs.mkdirSync(keystoreDir, { mode: 0o700 });
+      const keystorePath = path.join(keystoreDir, `wallet-${telegram_username}.json`);
+      const iv = crypto.randomBytes(16);
+      const key = crypto.scryptSync(wallet.address, 'clawbid-salt', 32);
+      const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+      let encryptedPK = cipher.update(wallet.privateKey, 'utf8', 'hex');
+      encryptedPK += cipher.final('hex');
+      fs.writeFileSync(keystorePath, JSON.stringify({
+        address: wallet.address,
+        encrypted_pk: encryptedPK,
+        iv: iv.toString('hex'),
+        created_at: new Date().toISOString()
+      }), { mode: 0o600 });
+
+      config.set('wallet_address', wallet.address);
+      config.set('wallet_keystore', keystorePath);
+
+      walletSpinner.succeed(chalk.green('✓ Wallet generated!'));
+      // ────────────────────────────────────────────────────────────────────
+
       // Step 5: Show result
       console.log();
       console.log(chalk.green('  ✓ Logged in as @' + telegram_username));
@@ -125,10 +176,12 @@ program
       console.log(`  ${chalk.bold('OpenClaw Key:')}  ${chalk.cyan(openclaw_key)}`);
       console.log(`  ${chalk.bold('Webhook ID:')}    ${chalk.cyan(webhook_id)}`);
       console.log(`  ${chalk.bold('Webhook URL:')}   ${chalk.cyan(webhook_url)}`);
-      console.log(`  ${chalk.bold('Config saved:')} ${chalk.gray(config.path)}`);
+      console.log(`  ${chalk.bold('Wallet:')}        ${chalk.cyan(wallet.address)}`);
+      console.log(`  ${chalk.bold('PK saved:')}      ${chalk.gray(keystorePath)} ${chalk.green('(encrypted, local only)')}`);
+      console.log(`  ${chalk.bold('Config saved:')}  ${chalk.gray(config.path)}`);
       console.log();
       console.log(chalk.yellow('  Next step:'));
-      console.log(`  ${chalk.cyan('clawbid init my-agent')}  ${chalk.gray('(wallet will be auto-generated)')}`);
+      console.log(`  ${chalk.cyan('clawbid init my-agent')}  ${chalk.gray('(uses wallet above)')}`);
       console.log();
 
     } catch (err) {
@@ -225,16 +278,47 @@ program
 
       const webhookId = webhookUrl.split('/wh/')[1];
 
-      // Generate Ethereum wallet
-      spinner.text = 'Generating wallet keypair...';
-      const wallet = ethers.Wallet.createRandom();
+      // Generate or reuse Ethereum wallet
+      spinner.text = 'Setting up wallet...';
+      let walletAddress = config.get('wallet_address');
+      let walletPrivateKey;
+
+      if (walletAddress) {
+        // Reuse wallet from login
+        const keystorePath = config.get('wallet_keystore');
+        console.log(chalk.gray(`\n  ♻  Reusing wallet from login: ${walletAddress}`));
+        walletPrivateKey = '(stored in keystore)'; // PK already encrypted & saved
+        spinner.start('Building agent config...');
+      } else {
+        // Generate new wallet
+        const newWallet = ethers.Wallet.createRandom();
+        walletAddress = newWallet.address;
+        walletPrivateKey = newWallet.privateKey;
+
+        // Save encrypted PK
+        const iv = crypto.randomBytes(16);
+        const key = crypto.scryptSync(walletAddress, 'clawbid-salt', 32);
+        const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+        let encryptedPK = cipher.update(walletPrivateKey, 'utf8', 'hex');
+        encryptedPK += cipher.final('hex');
+        const keystoreDir = path.join(require('os').homedir(), '.clawbid');
+        if (!fs.existsSync(keystoreDir)) fs.mkdirSync(keystoreDir, { mode: 0o700 });
+        const keystorePath = path.join(keystoreDir, `${name}.json`);
+        fs.writeFileSync(keystorePath, JSON.stringify({
+          address: walletAddress,
+          encrypted_pk: encryptedPK,
+          iv: iv.toString('hex')
+        }), { mode: 0o600 });
+        config.set('wallet_address', walletAddress);
+        config.set('wallet_keystore', keystorePath);
+      }
 
       // Build agent config
       const agentConfig = {
         name,
-        agent_id: `${name}-${wallet.address.slice(2, 8).toLowerCase()}`,
-        wallet_address: wallet.address,
-        wallet_private_key: wallet.privateKey,
+        agent_id: `${name}-${walletAddress.slice(2, 8).toLowerCase()}`,
+        wallet_address: walletAddress,
+        wallet_private_key: walletPrivateKey,
         webhook_url: webhookUrl,
         webhook_id: webhookId,
         llm_model: opts.llm || 'claude-sonnet-4-6',
@@ -254,27 +338,12 @@ program
         wallet_private_key: undefined
       }, null, 2));
 
-      // Save encrypted PK to ~/.clawbid/
-      const keystoreDir = path.join(require('os').homedir(), '.clawbid');
-      if (!fs.existsSync(keystoreDir)) fs.mkdirSync(keystoreDir, { mode: 0o700 });
-      const keystorePath = path.join(keystoreDir, `${name}.json`);
-      const iv = crypto.randomBytes(16);
-      const key = crypto.scryptSync(wallet.address, 'clawbid-salt', 32);
-      const encrypted = crypto.createCipheriv('aes-256-cbc', key, iv);
-      let encryptedPK = encrypted.update(wallet.privateKey, 'utf8', 'hex');
-      encryptedPK += encrypted.final('hex');
-      fs.writeFileSync(keystorePath, JSON.stringify({
-        address: wallet.address,
-        encrypted_pk: encryptedPK,
-        iv: iv.toString('hex')
-      }), { mode: 0o600 });
-
       // Register with ClawBid platform via webhook
       spinner.text = 'Registering with ClawBid platform...';
       const sig = crypto.createHmac('sha256', process.env.WEBHOOK_HMAC_SECRET || 'dev')
         .update(JSON.stringify({
           event: 'AGENT_INIT',
-          wallet_address: wallet.address,
+          wallet_address: walletAddress,
           agent_id: agentConfig.agent_id
         }))
         .digest('hex');
@@ -282,7 +351,7 @@ program
       await axios.post(webhookUrl, {
         event: 'AGENT_INIT',
         agent_id: agentConfig.agent_id,
-        wallet_address: wallet.address,
+        wallet_address: walletAddress,
         llm_model: agentConfig.llm_model,
         llm_fallback: agentConfig.llm_fallback,
         use_bankr_llm: true,
@@ -301,8 +370,8 @@ program
       console.log(`
   ${chalk.bold('Agent ID:')}    ${chalk.cyan(agentConfig.agent_id)}
   ${chalk.bold('Webhook ID:')}  ${chalk.cyan(webhookId)}
-  ${chalk.bold('Wallet:')}      ${chalk.cyan(wallet.address)}
-  ${chalk.bold('PK saved:')}    ${chalk.gray(keystorePath)} ${chalk.green('(local only)')}
+  ${chalk.bold('Wallet:')}      ${chalk.cyan(walletAddress)}
+  ${chalk.bold('PK saved:')}    ${chalk.gray(config.get('wallet_keystore'))} ${chalk.green('(local only)')}
   ${chalk.bold('Webhook:')}     ${chalk.cyan(webhookUrl)}
   ${chalk.bold('LLM Model:')}   ${chalk.cyan(agentConfig.llm_model)} ${chalk.gray('→ fallback: ' + agentConfig.llm_fallback)}
   ${chalk.bold('Config:')}      ${chalk.gray(configPath)}

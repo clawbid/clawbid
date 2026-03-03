@@ -18,8 +18,6 @@
     "ora": "^5.4.1",
     "gray-matter": "^4.0.3",
     "node-cron": "^3.0.3",
-    "conf": "^10.2.0",
-    "crypto": "^1.0.1",
     "dotenv": "^16.4.1"
   },
   "keywords": [
