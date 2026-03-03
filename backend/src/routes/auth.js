@@ -22,10 +22,10 @@ setInterval(() => {
 
 /**
  * POST /api/auth/telegram-login-token
- * Step 1: CLI minta token login
+ * Step 1: CLI requests login token
  * Body: { bot_token: "123456:ABC..." }
- * Flow baru: user input bot token mereka → kita verifikasi ke Telegram API
- *            → kirim pesan konfirmasi ke bot mereka sendiri
+ * New flow: user inputs their bot token → we verify with Telegram API
+ *            → send confirmation message to their own bot
  */
 router.post('/telegram-login-token', async (req, res) => {
   const { bot_token } = req.body;
@@ -35,7 +35,7 @@ router.post('/telegram-login-token', async (req, res) => {
   }
 
   try {
-    // 1. Verifikasi bot token ke Telegram API
+    // 1. Verify bot token with Telegram API
     const tgRes = await axios.get(`https://api.telegram.org/bot${bot_token}/getMe`, {
       timeout: 8000
     });
@@ -46,7 +46,7 @@ router.post('/telegram-login-token', async (req, res) => {
 
     const botInfo = tgRes.data.result;
 
-    // 2. Cek apakah bot ini sudah terdaftar di platform
+    // 2. Check if this bot is already registered on the platform
     const existing = await db.query(
       `SELECT u.*, a.agent_id, a.wallet_address, a.webhook_id 
        FROM users u 
@@ -59,25 +59,25 @@ router.post('/telegram-login-token', async (req, res) => {
     const raw = crypto.randomBytes(4).toString('hex').toUpperCase();
     const token = `CB-${raw.slice(0, 4)}-${raw.slice(4, 8)}`;
 
-    // 4. Generate openclaw_key (baru atau reuse yang lama)
+    // 4. Generate openclaw_key (new or reuse existing)
     let openclawKey, webhookId, webhookUrl, isNewUser;
 
     if (existing.rows.length > 0) {
-      // User sudah ada — reuse credentials
+      // User already exists — reuse credentials
       const user = existing.rows[0];
       openclawKey = user.openclaw_key;
       webhookId = user.webhook_id || crypto.randomBytes(16).toString('hex');
       webhookUrl = `${process.env.BACKEND_URL || 'https://api.clawbid.site'}/wh/${webhookId}`;
       isNewUser = false;
     } else {
-      // User baru
+      // New user
       openclawKey = `ocl_${crypto.randomBytes(24).toString('hex')}`;
       webhookId = crypto.randomBytes(16).toString('hex');
       webhookUrl = `${process.env.BACKEND_URL || 'https://api.clawbid.site'}/wh/${webhookId}`;
       isNewUser = true;
     }
 
-    // 5. Register Telegram webhook agar /confirm diterima backend
+    // 5. Register Telegram webhook so /confirm is received by backend
     const tgWebhookId = `tgbot-${botInfo.id}`;
     const tgWebhookUrl = `${process.env.BACKEND_URL || 'https://api.clawbid.site'}/wh/${tgWebhookId}`;
     try {
@@ -90,7 +90,7 @@ router.post('/telegram-login-token', async (req, res) => {
       console.warn('[Auth] setWebhook warning:', e.message);
     }
 
-    // 5b. Simpan token ke memory
+    // 5b. Save token to memory
     loginTokens.set(token, {
       status: 'pending',
       created_at: Date.now(),
@@ -104,12 +104,12 @@ router.post('/telegram-login-token', async (req, res) => {
       is_new_user: isNewUser,
     });
 
-    // 6. Kirim pesan konfirmasi ke bot milik user itu sendiri
-    //    Caranya: kirim via getUpdates dulu untuk dapat chat_id owner
-    //    ATAU user harus /start bot mereka sendiri dulu
-    //    Kita pakai pendekatan: kirim ke bot mereka, mereka konfirmasi lewat bot mereka
+    // 6. Send confirmation message to the user's own bot
+    //    Method: send via getUpdates first to get owner chat_id
+    //    OR user must /start their own bot first
+    //    We use this approach: send to their bot, they confirm via their bot
     
-    // Coba kirim ke owner bot (dari update terakhir)
+    // Try to send to bot owner (from last update)
     let ownerChatId = null;
     try {
       const updates = await axios.get(`https://api.telegram.org/bot${bot_token}/getUpdates?limit=1`, {
@@ -122,15 +122,15 @@ router.post('/telegram-login-token', async (req, res) => {
     } catch {}
 
     if (ownerChatId) {
-      // Kirim pesan konfirmasi ke bot mereka sendiri
+      // Send confirmation message to their own bot
       await axios.post(`https://api.telegram.org/bot${bot_token}/sendMessage`, {
         chat_id: ownerChatId,
         text: 
           `🦀 *ClawBid Login Request*\n\n` +
           `Token: \`${token}\`\n\n` +
-          `${isNewUser ? '✨ Akun baru akan dibuat untuk bot ini.' : '♻️ Menggunakan akun yang sudah ada.'}\n\n` +
-          `Ketik /confirm ${token} untuk konfirmasi login\n` +
-          `Atau /deny untuk tolak`,
+          `${isNewUser ? '✨ New account will be created for this bot.' : '♻️ Using existing account.'}\n\n` +
+          `Type /confirm ${token} to confirm login\n` +
+          `Or /deny to reject`,
         parse_mode: 'Markdown'
       }, { timeout: 5000 });
 
@@ -147,8 +147,8 @@ router.post('/telegram-login-token', async (req, res) => {
       is_new_user: isNewUser,
       message_sent: !!ownerChatId,
       instruction: ownerChatId
-        ? `Cek bot @${botInfo.username} kamu di Telegram dan ketik /confirm ${token}`
-        : `Buka bot @${botInfo.username} kamu di Telegram, lalu ketik /confirm ${token}`,
+        ? `Check bot @${botInfo.username} on Telegram and type /confirm ${token}`
+        : `Open bot @${botInfo.username} on Telegram, then type /confirm ${token}`,
     });
 
   } catch (err) {
@@ -162,7 +162,7 @@ router.post('/telegram-login-token', async (req, res) => {
 
 /**
  * GET /api/auth/telegram-login-poll/:token
- * CLI polling setiap 3s
+ * CLI polling every 3s
  */
 router.get('/telegram-login-poll/:token', (req, res) => {
   const { token } = req.params;
@@ -189,8 +189,8 @@ router.get('/telegram-login-poll/:token', (req, res) => {
 
 /**
  * POST /api/auth/bot-confirm
- * Dipanggil oleh bot user ketika mereka ketik /confirm <token>
- * Bot mereka kirim request ke endpoint ini via webhook atau kita handle di bot service
+ * Called by user's bot when they type /confirm <token>
+ * Their bot sends a request to this endpoint via webhook or we handle it in the bot service
  */
 router.post('/bot-confirm', async (req, res) => {
   const { token, bot_token, chat_id } = req.body;
@@ -199,13 +199,13 @@ router.post('/bot-confirm', async (req, res) => {
   if (!data) return res.status(404).json({ error: 'Token not found or expired' });
   if (data.status !== 'pending') return res.status(400).json({ error: `Token already ${data.status}` });
 
-  // Verifikasi bahwa bot_token cocok
+  // Verify that bot_token matches
   if (data.bot_token !== bot_token) {
     return res.status(401).json({ error: 'Bot token mismatch' });
   }
 
   try {
-    // Simpan atau update user di database
+    // Save or update user in database
     let userId;
     const existing = await db.query(
       `SELECT id FROM users WHERE bot_username = $1`,
@@ -213,7 +213,7 @@ router.post('/bot-confirm', async (req, res) => {
     );
 
     if (existing.rows.length === 0) {
-      // User baru — insert
+      // New user — insert
       const newUser = await db.query(
         `INSERT INTO users (openclaw_key, bot_token, bot_username, bot_id, telegram_chat_id)
          VALUES ($1, $2, $3, $4, $5) RETURNING id`,
@@ -237,18 +237,18 @@ router.post('/bot-confirm', async (req, res) => {
       [userId, `agent-${data.bot_username}`, '0x0000000000000000000000000000000000000000', data.webhook_id]
     );
 
-    // Konfirmasi token
+    // Confirm token
     loginTokens.set(token, { ...data, status: 'confirmed', confirmed_at: Date.now(), owner_chat_id: chat_id });
 
-    // Kirim pesan sukses ke bot mereka
+    // Send success message to their bot
     await axios.post(`https://api.telegram.org/bot${data.bot_token}/sendMessage`, {
       chat_id,
       text:
-        `✅ *Login Berhasil!*\n\n` +
-        `Terminal kamu sudah terautentikasi.\n\n` +
+        `✅ *Login Successful!*\n\n` +
+        `Your terminal is now authenticated.\n\n` +
         `🔑 OpenClaw Key:\n\`${data.openclaw_key}\`\n\n` +
         `🔗 Webhook ID:\n\`${data.webhook_id}\`\n\n` +
-        `*Lanjutkan di terminal:*\n` +
+        `*Continue in terminal:*\n` +
         `\`\`\`\nclawbid init my-agent\n\`\`\``,
       parse_mode: 'Markdown'
     }, { timeout: 5000 }).catch(() => {});
