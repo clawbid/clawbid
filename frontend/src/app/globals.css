@@ -38,3 +38,13 @@ body::before {
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 3px; }
+
+/* Mobile safe area support */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .mobile-bottom-tabs {
+    padding-bottom: max(8px, env(safe-area-inset-bottom)) !important;
+  }
+}
+
+/* Hide scrollbar on filter bars */
+.filter-bar div::-webkit-scrollbar { display: none; }
