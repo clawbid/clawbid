@@ -213,10 +213,13 @@ router.post('/bot-confirm', async (req, res) => {
     );
 
     if (existing.rows.length === 0) {
-      // New user — insert
+      // New user — upsert to handle duplicate telegram_chat_id
       const newUser = await db.query(
         `INSERT INTO users (openclaw_key, bot_token, bot_username, bot_id, telegram_chat_id)
-         VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (telegram_chat_id) DO UPDATE
+           SET openclaw_key=$1, bot_token=$2, bot_username=$3, bot_id=$4
+         RETURNING id`,
         [data.openclaw_key, data.bot_token, data.bot_username, data.bot_id, chat_id]
       );
       userId = newUser.rows[0].id;
