@@ -18,8 +18,8 @@ export default function RootLayout({ children }) {
       <body style={{
         margin: 0,
         fontFamily: 'Syne, system-ui, sans-serif',
-        background: '#f7f8fa',
-        color: '#111827',
+        background: '#060910',
+        color: '#dde4f0',
         WebkitFontSmoothing: 'antialiased',
       }}>
         <style>{`
@@ -29,9 +29,9 @@ export default function RootLayout({ children }) {
           button { font-family: inherit; }
           input, textarea { font-family: inherit; }
           ::-webkit-scrollbar { width: 6px; height: 6px; }
-          ::-webkit-scrollbar-track { background: #f3f4f6; }
-          ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
-          ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+          ::-webkit-scrollbar-track { background: #0a0f1e; }
+          ::-webkit-scrollbar-thumb { background: #1e2d45; border-radius: 3px; }
+          ::-webkit-scrollbar-thumb:hover { background: #2a3f5f; }
           @keyframes spin { to { transform: rotate(360deg); } }
           @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
         `}</style>
