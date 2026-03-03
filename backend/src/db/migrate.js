@@ -154,6 +154,20 @@ EXCEPTION WHEN others THEN NULL; END $$;
 DO $$ BEGIN
   CREATE UNIQUE INDEX IF NOT EXISTS idx_users_bot_username ON users(bot_username);
 EXCEPTION WHEN others THEN NULL; END $$;
+
+-- ─── FIX WALLETS TABLE: add wallet_address as alias for address ───────────────
+DO $$ BEGIN
+  ALTER TABLE wallets ADD COLUMN IF NOT EXISTS wallet_address VARCHAR(42);
+EXCEPTION WHEN others THEN NULL; END $$;
+
+DO $$ BEGIN
+  UPDATE wallets SET wallet_address = address WHERE wallet_address IS NULL;
+EXCEPTION WHEN others THEN NULL; END $$;
+
+-- Add unique constraint on wallets.address if not exists
+DO $$ BEGIN
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_wallets_address ON wallets(address);
+EXCEPTION WHEN others THEN NULL; END $$;
 `;
 
 async function migrate() {
