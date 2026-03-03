@@ -244,16 +244,6 @@ program
     if (loggedInAt) console.log(`  Login at:      ${chalk.gray(new Date(loggedInAt).toLocaleString())}`);
     console.log();
   });
-    console.log(`  OpenClaw Key:  ${chalk.cyan(openclawKey)}`);
-    console.log(`  Webhook ID:    ${chalk.cyan(webhookId)}`);
-    if (agentConf) {
-      console.log(`  Agent ID:      ${chalk.cyan(agentConf.agent_id)}`);
-      console.log(`  Wallet:        ${chalk.cyan(agentConf.wallet_address)}`);
-      console.log(`  LLM Model:     ${chalk.cyan(agentConf.llm_model)}`);
-    }
-    if (loggedInAt) console.log(`  Logged in:     ${chalk.gray(new Date(loggedInAt).toLocaleString())}`);
-    console.log();
-  });
 
 // ── clawbid logout ───────────────────────────────────────────────────────────
 program
