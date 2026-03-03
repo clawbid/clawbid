@@ -138,8 +138,21 @@ DO $$ BEGIN
   CREATE INDEX IF NOT EXISTS idx_users_openclaw_key ON users(openclaw_key);
 EXCEPTION WHEN others THEN NULL; END $$;
 
+-- ─── BOT TOKEN COLUMNS (new auth flow) ──────────────────────────────────────
 DO $$ BEGIN
-  CREATE INDEX IF NOT EXISTS idx_agents_telegram_chat_id ON agents(telegram_chat_id);
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS bot_token TEXT;
+EXCEPTION WHEN others THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS bot_username TEXT;
+EXCEPTION WHEN others THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS bot_id BIGINT;
+EXCEPTION WHEN others THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_users_bot_username ON users(bot_username);
 EXCEPTION WHEN others THEN NULL; END $$;
 `;
 
