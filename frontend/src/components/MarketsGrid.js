@@ -73,10 +73,36 @@ export default function MarketsGrid({ markets, prices, timeframe, setTimeframe, 
   return (
     <div style={{ background: '#f7f8fa', minHeight: '100vh' }}>
 
+      <style>{`
+        .mg-hero { padding: 24px 16px 20px !important; }
+        .mg-hero h1 { font-size: 22px !important; letter-spacing: -0.5px !important; }
+        .mg-hero p  { font-size: 13px !important; }
+        .mg-stats   { flex-wrap: wrap !important; gap: 8px !important; }
+        .mg-stat    { padding: 8px 12px !important; min-width: unset !important; flex: 1 1 80px !important; }
+        .mg-stat-val{ font-size: 15px !important; }
+        .mg-filter  { padding: 0 12px !important; }
+        .mg-wrap    { padding: 14px 12px 80px !important; }
+        .mg-grid    { grid-template-columns: 1fr !important; }
+        @media(min-width:480px){
+          .mg-hero  { padding: 32px 20px 24px !important; }
+          .mg-hero h1{ font-size: 28px !important; }
+          .mg-grid  { grid-template-columns: repeat(auto-fill,minmax(280px,1fr)) !important; }
+          .mg-wrap  { padding: 18px 16px 60px !important; }
+        }
+        @media(min-width:769px){
+          .mg-hero  { padding: 48px 36px 40px !important; }
+          .mg-hero h1{ font-size: 40px !important; letter-spacing:-1.5px !important; }
+          .mg-stat  { padding: 14px 20px !important; min-width: 100px !important; flex:unset !important; }
+          .mg-stat-val{ font-size: 22px !important; }
+          .mg-filter{ padding: 0 36px !important; }
+          .mg-wrap  { padding: 28px 36px !important; }
+          .mg-grid  { grid-template-columns: repeat(auto-fill,minmax(300px,1fr)) !important; }
+        }
+      `}</style>
+
       {/* Hero */}
-      <div style={{
+      <div className="mg-hero" style={{
         background: 'linear-gradient(135deg, #0055ff 0%, #7c3aed 100%)',
-        padding: '48px 36px 40px',
         position: 'relative', overflow: 'hidden',
       }}>
         {/* bg decoration */}
@@ -85,7 +111,7 @@ export default function MarketsGrid({ markets, prices, timeframe, setTimeframe, 
         <div style={{ maxWidth: 1360, margin: '0 auto', position: 'relative' }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 24 }}>
             <div>
-              <h1 style={{ fontSize: 40, fontWeight: 900, color: '#fff', letterSpacing: -1.5, marginBottom: 8 }}>
+              <h1 style={{ fontWeight: 900, color: '#fff', marginBottom: 8, lineHeight: 1.1 }}>
                 AI Prediction Markets
               </h1>
               <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 15, lineHeight: 1.6, maxWidth: 480 }}>
@@ -95,7 +121,7 @@ export default function MarketsGrid({ markets, prices, timeframe, setTimeframe, 
             </div>
 
             {/* Stats */}
-            <div style={{ display: 'flex', gap: 12 }}>
+            <div className="mg-stats" style={{ display: 'flex', gap: 12 }}>
               {[
                 [formatVolume(stats.volume), 'Total Volume', '📊'],
                 [stats.agents.toLocaleString(), 'Active Agents', '🤖'],
@@ -104,10 +130,10 @@ export default function MarketsGrid({ markets, prices, timeframe, setTimeframe, 
                 <div key={l} style={{
                   background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(12px)',
                   border: '1px solid rgba(255,255,255,0.2)',
-                  borderRadius: 14, padding: '14px 20px', textAlign: 'center', minWidth: 100,
+                  borderRadius: 14, textAlign: 'center',
                 }}>
                   <div style={{ fontSize: 18 }}>{icon}</div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginTop: 4 }}>{v}</div>
+                  <div className="mg-stat-val" style={{ fontWeight: 800, color: '#fff', marginTop: 4 }}>{v}</div>
                   <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2, fontFamily: 'IBM Plex Mono, monospace' }}>{l}</div>
                 </div>
               ))}
@@ -127,7 +153,7 @@ export default function MarketsGrid({ markets, prices, timeframe, setTimeframe, 
       </div>
 
       {/* Filters */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #e8ecf0', padding: '0 36px' }}>
+      <div className="mg-filter" style={{ background: '#fff', borderBottom: '1px solid #e8ecf0' }}>
         <div style={{ maxWidth: 1360, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 6, height: 52 }}>
           <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 600, marginRight: 4, fontFamily: 'IBM Plex Mono, monospace' }}>TIMEFRAME</span>
           {[null, ...TIMEFRAMES].map(tf => (
@@ -146,7 +172,7 @@ export default function MarketsGrid({ markets, prices, timeframe, setTimeframe, 
       </div>
 
       {/* Grid */}
-      <div style={{ maxWidth: 1360, margin: '0 auto', padding: '28px 36px' }}>
+      <div className="mg-wrap" style={{ maxWidth: 1360, margin: '0 auto' }}>
         {filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 0', color: '#9ca3af' }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>🏛</div>
@@ -154,7 +180,7 @@ export default function MarketsGrid({ markets, prices, timeframe, setTimeframe, 
             <div style={{ fontSize: 13, marginTop: 6 }}>Markets are created every 30 minutes</div>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+          <div className="mg-grid" style={{ display: 'grid', gap: 16 }}>
             {filtered.map(m => {
               const style = COIN_STYLES[m.asset] || COIN_STYLES.BTC;
               const yesPct = parseFloat(m.yes_pct || 50);
