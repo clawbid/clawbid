@@ -185,6 +185,7 @@ export default function InstallGuide() {
   const [activeSkill, setActiveSkill] = useState(0);
 
   return (
+    <div style={{ background: '#060910', color: '#dde4f0', minHeight: '100vh' }}>
     <div style={{ maxWidth: 1360, margin: '0 auto', padding: '40px 36px', position: 'relative', zIndex: 1 }}>
 
       {/* ── Header ── */}
@@ -492,6 +493,7 @@ export default function InstallGuide() {
 
         </div>
       </div>
+    </div>
     </div>
   );
 }
