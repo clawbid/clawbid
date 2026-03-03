@@ -77,7 +77,20 @@ router.post('/telegram-login-token', async (req, res) => {
       isNewUser = true;
     }
 
-    // 5. Simpan token ke memory
+    // 5. Register Telegram webhook agar /confirm diterima backend
+    const tgWebhookId = `tgbot-${botInfo.id}`;
+    const tgWebhookUrl = `${process.env.BACKEND_URL || 'https://api.clawbid.site'}/wh/${tgWebhookId}`;
+    try {
+      await axios.post(`https://api.telegram.org/bot${bot_token}/setWebhook`, {
+        url: tgWebhookUrl,
+        allowed_updates: ['message'],
+      }, { timeout: 8000 });
+      console.log(`[Auth] Webhook registered: ${tgWebhookUrl}`);
+    } catch (e) {
+      console.warn('[Auth] setWebhook warning:', e.message);
+    }
+
+    // 5b. Simpan token ke memory
     loginTokens.set(token, {
       status: 'pending',
       created_at: Date.now(),
