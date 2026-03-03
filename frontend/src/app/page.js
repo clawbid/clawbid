@@ -4,6 +4,8 @@ import Nav from '../components/Nav';
 import MarketsGrid from '../components/MarketsGrid';
 import Dashboard from '../components/Dashboard';
 import InstallGuide from '../components/InstallGuide';
+import Markets from '../components/Markets';
+import Leaderboard from '../components/Leaderboard';
 import { fetchMarkets, fetchPrices } from '../lib/api';
 import { useWebSocket } from '../lib/useWebSocket';
 
@@ -54,6 +56,8 @@ export default function Home() {
         wsConnected={connected}
         webhookId={webhookId}
       />
+
+      {/* AI Markets (existing) */}
       {tab === 'markets' && (
         <MarketsGrid
           markets={markets}
@@ -63,6 +67,18 @@ export default function Home() {
           latestTrade={latestTrade}
         />
       )}
+
+      {/* Human Trading — bet YES/NO against AI agents */}
+      {tab === 'trade' && (
+        <Markets prices={prices} />
+      )}
+
+      {/* Human vs AI Leaderboard */}
+      {tab === 'leaderboard' && (
+        <Leaderboard />
+      )}
+
+      {/* AI Agent Dashboard */}
       {tab === 'dashboard' && (
         <Dashboard
           webhookId={webhookId}
@@ -70,6 +86,8 @@ export default function Home() {
           prices={prices}
         />
       )}
+
+      {/* Install SDK guide */}
       {tab === 'install' && <InstallGuide />}
     </div>
   );

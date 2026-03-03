@@ -2,8 +2,10 @@
 
 const tabs = [
   { id: 'markets', label: '🏛 Markets' },
+  { id: 'trade', label: '⚡ Trade' },
+  { id: 'leaderboard', label: '🏆 Leaderboard' },
   { id: 'dashboard', label: '📊 Dashboard' },
-  { id: 'install', label: '⚡ Install SDK' },
+  { id: 'install', label: '🦀 Install SDK' },
 ];
 
 export default function Nav({ tab, setTab, wsConnected, webhookId }) {
