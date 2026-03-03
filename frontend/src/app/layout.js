@@ -1,4 +1,5 @@
 import { Syne, IBM_Plex_Mono } from 'next/font/google';
+import { PrivyProvider } from '../lib/privy';
 
 const syne = Syne({ subsets: ['latin'], variable: '--font-syne', weight: ['400','500','600','700','800'] });
 const mono = IBM_Plex_Mono({ subsets: ['latin'], variable: '--font-mono', weight: ['400','500','600'] });
@@ -34,7 +35,9 @@ export default function RootLayout({ children }) {
           @keyframes spin { to { transform: rotate(360deg); } }
           @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
         `}</style>
-        {children}
+        <PrivyProvider>
+          {children}
+        </PrivyProvider>
       </body>
     </html>
   );
