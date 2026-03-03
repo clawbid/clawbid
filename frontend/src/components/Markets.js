@@ -3,16 +3,40 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../lib/privy';
 import { fetchMarkets } from '../lib/api';
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-const fmt = (n) => '$' + parseFloat(n || 0).toFixed(2);
-const countdown = (ts) => {
-  const diff = Math.max(0, new Date(ts) - Date.now());
-  const m = Math.floor(diff / 60000);
-  const s = Math.floor((diff % 60000) / 1000);
-  return `${m}m ${s.toString().padStart(2, '0')}s`;
+const COIN_STYLES = {
+  BTC:  { bg: 'linear-gradient(135deg,#f7931a,#fbbf24)', symbol: '₿', color: '#f7931a' },
+  ETH:  { bg: 'linear-gradient(135deg,#627eea,#a78bfa)', symbol: 'Ξ', color: '#627eea' },
+  SOL:  { bg: 'linear-gradient(135deg,#9945ff,#14f195)', symbol: '◎', color: '#9945ff' },
+  BNB:  { bg: 'linear-gradient(135deg,#f0b90b,#fbbf24)', symbol: 'B', color: '#f0b90b' },
+  AVAX: { bg: 'linear-gradient(135deg,#e84142,#ff6b6b)', symbol: 'A', color: '#e84142' },
+  ADA:  { bg: 'linear-gradient(135deg,#0033ad,#60a5fa)', symbol: '₳', color: '#0033ad' },
+  MATIC:{ bg: 'linear-gradient(135deg,#8247e5,#a78bfa)', symbol: 'M', color: '#8247e5' },
+  LINK: { bg: 'linear-gradient(135deg,#2a5ada,#60a5fa)', symbol: 'L', color: '#2a5ada' },
 };
 
-// ── BetModal ──────────────────────────────────────────────────────────────────
+function timeLeft(closesAt) {
+  const diff = new Date(closesAt) - Date.now();
+  if (diff <= 0) return 'Closed';
+  const m = Math.floor(diff / 60000);
+  const h = Math.floor(m / 60);
+  if (h > 0) return `${h}h ${m % 60}m`;
+  const s = Math.floor((diff % 60000) / 1000);
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+
+function formatNum(n) {
+  const v = parseInt(n || 0);
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `${(v / 1_000).toFixed(1)}K`;
+  return v.toLocaleString();
+}
+
+function formatVol(v) {
+  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `$${(v / 1_000).toFixed(1)}K`;
+  return `$${v.toFixed(0)}`;
+}
+
 function BetModal({ market, onClose, onBet }) {
   const [direction, setDirection] = useState(null);
   const [amount, setAmount] = useState('10');
@@ -25,427 +49,250 @@ function BetModal({ market, onClose, onBet }) {
   const totalPool = yesPool + noPool;
   const yesPct = totalPool > 0 ? Math.round((yesPool / totalPool) * 100) : 50;
   const noPct = 100 - yesPct;
+  const style = COIN_STYLES[market.asset] || COIN_STYLES.BTC;
 
   const handleBet = async () => {
     if (!direction) return setError('Select YES or NO');
     if (!amount || parseFloat(amount) < 1) return setError('Minimum bet: $1 USDC');
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     try {
       await onBet(market.id, direction, parseFloat(amount));
       setSuccess(`✓ Bet placed! ${direction} $${amount} USDC`);
-      setTimeout(() => { onClose(); }, 2000);
+      setTimeout(() => onClose(), 2000);
     } catch (err) {
       setError(err.message || 'Transaction failed');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      zIndex: 1000, backdropFilter: 'blur(6px)',
-    }}>
-      <div style={{
-        background: '#080c1a', border: '1px solid rgba(0,229,255,0.2)',
-        borderRadius: 18, padding: 32, width: 420, maxWidth: '90vw',
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-          <h3 style={{ fontSize: 16, fontWeight: 800 }}>Place Bet</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#3d4f6b', cursor: 'pointer', fontSize: 20 }}>×</button>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
+      <div style={{ background: '#fff', borderRadius: 20, padding: 28, width: 420, maxWidth: '90vw', boxShadow: '0 24px 64px rgba(0,0,0,0.15)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: style.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 800, color: '#fff' }}>{style.symbol}</div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 15, color: '#111827' }}>Place Bet</div>
+              <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'IBM Plex Mono, monospace' }}>{market.asset} · {market.timeframe}</div>
+            </div>
+          </div>
+          <button onClick={onClose} style={{ background: '#f3f4f6', border: 'none', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 16, color: '#6b7280' }}>×</button>
         </div>
-
-        {/* Market info */}
-        <div style={{ background: '#0c1123', borderRadius: 10, padding: 14, marginBottom: 20 }}>
-          <div style={{ fontSize: 11, color: '#3d4f6b', fontFamily: 'IBM Plex Mono, monospace', marginBottom: 6 }}>
-            {market.asset} / {market.timeframe}
+        <div style={{ background: '#f9fafb', borderRadius: 10, padding: '12px 14px', marginBottom: 18, fontSize: 13, color: '#374151', lineHeight: 1.5 }}>{market.question}</div>
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', height: 8, marginBottom: 8 }}>
+            <div style={{ width: `${yesPct}%`, background: 'linear-gradient(90deg,#10b981,#34d399)' }} />
+            <div style={{ flex: 1, background: 'linear-gradient(90deg,#f87171,#ef4444)' }} />
           </div>
-          <div style={{ fontSize: 13, color: '#dde4f0', lineHeight: 1.5 }}>{market.question}</div>
-          <div style={{ fontSize: 11, color: '#3d4f6b', marginTop: 8, fontFamily: 'IBM Plex Mono, monospace' }}>
-            Closes in: {countdown(market.closes_at)}
-          </div>
-        </div>
-
-        {/* Odds bar */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#3d4f6b', marginBottom: 6, fontFamily: 'IBM Plex Mono, monospace' }}>
-            <span>YES {yesPct}%</span>
-            <span>Pool: {fmt((market.yes_pool || 0) + (market.no_pool || 0))} USDC</span>
-            <span>NO {noPct}%</span>
-          </div>
-          <div style={{ height: 6, background: '#1a2035', borderRadius: 4, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${yesPct}%`, background: 'linear-gradient(90deg,#00ff88,#00e5ff)', borderRadius: 4 }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontFamily: 'IBM Plex Mono, monospace' }}>
+            <span style={{ color: '#10b981', fontWeight: 700 }}>YES {yesPct}%</span>
+            <span style={{ color: '#9ca3af' }}>Pool: {formatVol(totalPool)}</span>
+            <span style={{ color: '#ef4444', fontWeight: 700 }}>NO {noPct}%</span>
           </div>
         </div>
-
-        {/* Direction buttons */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 18 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
           {['YES', 'NO'].map(d => (
-            <button
-              key={d}
-              onClick={() => setDirection(d)}
-              style={{
-                padding: '14px 0', borderRadius: 10, border: '2px solid',
-                borderColor: direction === d ? (d === 'YES' ? '#00ff88' : '#ff4444') : 'rgba(255,255,255,0.08)',
-                background: direction === d
-                  ? (d === 'YES' ? 'rgba(0,255,136,0.1)' : 'rgba(255,68,68,0.1)')
-                  : 'transparent',
-                color: direction === d ? (d === 'YES' ? '#00ff88' : '#ff4444') : '#3d4f6b',
-                fontSize: 16, fontWeight: 800, cursor: 'pointer', transition: 'all 0.15s',
-              }}
-            >
+            <button key={d} onClick={() => setDirection(d)} style={{ padding: '14px 0', borderRadius: 12, border: '2px solid', borderColor: direction === d ? (d === 'YES' ? '#10b981' : '#ef4444') : '#e5e7eb', background: direction === d ? (d === 'YES' ? '#f0fdf4' : '#fef2f2') : '#fff', color: direction === d ? (d === 'YES' ? '#10b981' : '#ef4444') : '#9ca3af', fontSize: 15, fontWeight: 800, cursor: 'pointer', transition: 'all 0.15s' }}>
               {d === 'YES' ? '↑ YES' : '↓ NO'}
             </button>
           ))}
         </div>
-
-        {/* Amount */}
-        <div style={{ marginBottom: 18 }}>
-          <div style={{ fontSize: 11, color: '#3d4f6b', marginBottom: 8, fontFamily: 'IBM Plex Mono, monospace' }}>AMOUNT (USDC)</div>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8, fontFamily: 'IBM Plex Mono, monospace', fontWeight: 600 }}>AMOUNT (USDC)</div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
             {['5', '10', '25', '50'].map(v => (
-              <button
-                key={v}
-                onClick={() => setAmount(v)}
-                style={{
-                  flex: 1, padding: '7px 0', borderRadius: 7,
-                  border: '1px solid',
-                  borderColor: amount === v ? '#00e5ff' : 'rgba(255,255,255,0.08)',
-                  background: amount === v ? 'rgba(0,229,255,0.08)' : 'transparent',
-                  color: amount === v ? '#00e5ff' : '#3d4f6b',
-                  fontSize: 12, cursor: 'pointer',
-                }}
-              >
-                ${v}
-              </button>
+              <button key={v} onClick={() => setAmount(v)} style={{ flex: 1, padding: '7px 0', borderRadius: 8, border: '1px solid', borderColor: amount === v ? '#0055ff' : '#e5e7eb', background: amount === v ? '#f0f4ff' : '#fff', color: amount === v ? '#0055ff' : '#6b7280', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>${v}</button>
             ))}
           </div>
-          <input
-            type="number"
-            value={amount}
-            onChange={e => setAmount(e.target.value)}
-            min="1"
-            placeholder="Custom amount..."
-            style={{
-              width: '100%', padding: '10px 14px', borderRadius: 8,
-              background: '#0c1123', border: '1px solid rgba(255,255,255,0.08)',
-              color: '#dde4f0', fontSize: 13, fontFamily: 'IBM Plex Mono, monospace',
-              boxSizing: 'border-box',
-            }}
-          />
+          <input type="number" value={amount} onChange={e => setAmount(e.target.value)} min="1" placeholder="Custom amount..." style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #e5e7eb', color: '#111827', fontSize: 13, fontFamily: 'IBM Plex Mono, monospace', boxSizing: 'border-box', outline: 'none' }} />
         </div>
-
-        {/* Potential payout */}
         {direction && amount && parseFloat(amount) > 0 && (
-          <div style={{ background: 'rgba(0,229,255,0.05)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 12, fontFamily: 'IBM Plex Mono, monospace' }}>
-            <span style={{ color: '#3d4f6b' }}>Est. payout if {direction}: </span>
-            <span style={{ color: '#00e5ff' }}>
-              ~${(() => {
-                const amt = parseFloat(amount);
-                const newTotal = totalPool + amt;
-                const newPool = direction === 'YES' ? yesPool + amt : noPool + amt;
-                const payout = newPool > 0 ? (amt / newPool) * newTotal * 0.98 : amt;
-                return payout.toFixed(2);
-              })()} USDC
-            </span>
+          <div style={{ background: '#f0f4ff', borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontSize: 12, fontFamily: 'IBM Plex Mono, monospace', display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ color: '#6b7280' }}>Est. payout if {direction}:</span>
+            <span style={{ color: '#0055ff', fontWeight: 700 }}>~${(() => { const amt = parseFloat(amount); const nt = totalPool + amt; const np = direction === 'YES' ? yesPool + amt : noPool + amt; return np > 0 ? ((amt / np) * nt * 0.98).toFixed(2) : amt.toFixed(2); })()} USDC</span>
           </div>
         )}
-
-        {error && <div style={{ color: '#ff4444', fontSize: 12, marginBottom: 12, fontFamily: 'IBM Plex Mono, monospace' }}>⚠ {error}</div>}
-        {success && <div style={{ color: '#00ff88', fontSize: 12, marginBottom: 12, fontFamily: 'IBM Plex Mono, monospace' }}>{success}</div>}
-
-        <button
-          onClick={handleBet}
-          disabled={loading || !direction}
-          style={{
-            width: '100%', padding: '14px 0', borderRadius: 10, border: 'none',
-            background: loading || !direction
-              ? 'rgba(255,255,255,0.05)'
-              : 'linear-gradient(135deg,#00e5ff,#7c3aed)',
-            color: loading || !direction ? '#3d4f6b' : '#000',
-            fontWeight: 800, fontSize: 14, cursor: loading || !direction ? 'not-allowed' : 'pointer',
-          }}
-        >
+        {error && <div style={{ color: '#ef4444', fontSize: 12, marginBottom: 12 }}>⚠ {error}</div>}
+        {success && <div style={{ color: '#10b981', fontSize: 12, marginBottom: 12 }}>{success}</div>}
+        <button onClick={handleBet} disabled={loading || !direction} style={{ width: '100%', padding: '14px 0', borderRadius: 12, border: 'none', background: loading || !direction ? '#f3f4f6' : 'linear-gradient(135deg,#0055ff,#7c3aed)', color: loading || !direction ? '#9ca3af' : '#fff', fontWeight: 800, fontSize: 14, cursor: loading || !direction ? 'not-allowed' : 'pointer' }}>
           {loading ? 'Signing transaction...' : `Confirm Bet — $${amount || '0'} USDC`}
         </button>
-        <p style={{ fontSize: 11, color: '#3d4f6b', textAlign: 'center', marginTop: 10 }}>
-          Funds held in smart contract · Auto-settled at close
-        </p>
+        <p style={{ fontSize: 11, color: '#9ca3af', textAlign: 'center', marginTop: 10 }}>Funds held in smart contract · Auto-settled at close</p>
       </div>
     </div>
   );
 }
 
-// ── Market Card ───────────────────────────────────────────────────────────────
 function MarketCard({ market, onBetClick, userPosition }) {
-  const [timer, setTimer] = useState(countdown(market.closes_at));
-
-  useEffect(() => {
-    const t = setInterval(() => setTimer(countdown(market.closes_at)), 1000);
-    return () => clearInterval(t);
-  }, [market.closes_at]);
-
+  const [hovered, setHovered] = useState(false);
+  const style = COIN_STYLES[market.asset] || COIN_STYLES.BTC;
   const yesPool = parseFloat(market.yes_pool || 0);
   const noPool = parseFloat(market.no_pool || 0);
   const totalPool = yesPool + noPool;
-  const yesPct = totalPool > 0 ? Math.round((yesPool / totalPool) * 100) : 50;
+  const yesPct = parseFloat(market.yes_pct || (totalPool > 0 ? (yesPool / totalPool * 100) : 50));
   const noPct = 100 - yesPct;
-  const humanBets = market.human_count || 0;
-  const aiBets = market.agent_count || 0;
+  const vol = totalPool;
+  const isHot = vol > 100;
 
   return (
-    <div style={{
-      background: '#080c1a', border: '1px solid rgba(255,255,255,0.06)',
-      borderRadius: 14, padding: 18, transition: 'border-color 0.2s',
-    }}
-      onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(0,229,255,0.2)'}
-      onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'}
-    >
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-        <div style={{ display: 'flex', gap: 6 }}>
-          <span style={{ background: 'rgba(0,229,255,0.1)', color: '#00e5ff', borderRadius: 5, padding: '2px 8px', fontSize: 10, fontFamily: 'IBM Plex Mono, monospace' }}>
-            {market.asset}
-          </span>
-          <span style={{ background: 'rgba(124,58,237,0.1)', color: '#a78bfa', borderRadius: 5, padding: '2px 8px', fontSize: 10, fontFamily: 'IBM Plex Mono, monospace' }}>
-            {market.timeframe}
-          </span>
+    <div onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} style={{ background: '#fff', border: hovered ? '1px solid #0055ff' : '1px solid #e8ecf0', borderRadius: 16, overflow: 'hidden', cursor: 'pointer', transition: 'all .2s', boxShadow: hovered ? '0 8px 32px rgba(0,85,255,0.12)' : '0 1px 4px rgba(0,0,0,0.04)', transform: hovered ? 'translateY(-2px)' : 'none' }}>
+      <div style={{ padding: '16px 18px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 38, height: 38, borderRadius: 12, background: style.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: '#fff', boxShadow: `0 2px 8px ${style.color}40` }}>{style.symbol}</div>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 14, color: '#111827' }}>{market.asset}</div>
+            <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'IBM Plex Mono, monospace' }}>{market.timeframe}</div>
+          </div>
         </div>
-        <span style={{ fontSize: 11, color: '#3d4f6b', fontFamily: 'IBM Plex Mono, monospace' }}>{timer}</span>
-      </div>
-
-      {/* Question */}
-      <p style={{ fontSize: 13, color: '#dde4f0', lineHeight: 1.5, marginBottom: 14, minHeight: 38 }}>
-        {market.question}
-      </p>
-
-      {/* Odds bar */}
-      <div style={{ marginBottom: 12 }}>
-        <div style={{ height: 6, background: '#1a2035', borderRadius: 4, overflow: 'hidden', marginBottom: 6 }}>
-          <div style={{ height: '100%', width: `${yesPct}%`, background: 'linear-gradient(90deg,#00ff88,#00e5ff)', borderRadius: 4, transition: 'width 0.5s' }} />
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'IBM Plex Mono, monospace' }}>
-          <span style={{ color: '#00ff88' }}>YES {yesPct}%</span>
-          <span style={{ color: '#3d4f6b' }}>{fmt(totalPool)} pool</span>
-          <span style={{ color: '#ff4444' }}>NO {noPct}%</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {isHot && <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa', fontWeight: 700 }}>🔥 Hot</span>}
+          <span style={{ fontSize: 11, padding: '3px 9px', borderRadius: 20, background: '#f0f4ff', color: '#0055ff', fontFamily: 'IBM Plex Mono, monospace', fontWeight: 600 }}>{market.timeframe}</span>
         </div>
       </div>
-
-      {/* Human vs AI count */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-        <div style={{ flex: 1, background: 'rgba(0,229,255,0.05)', borderRadius: 7, padding: '6px 10px', display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'IBM Plex Mono, monospace' }}>
-          <span style={{ color: '#3d4f6b' }}>👤 Humans</span>
-          <span style={{ color: '#00e5ff' }}>{humanBets}</span>
+      <div style={{ padding: '0 18px 12px', fontSize: 13, color: '#374151', lineHeight: 1.55, fontWeight: 500 }}>{market.question}</div>
+      <div style={{ padding: '0 18px 14px' }}>
+        <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', height: 8, marginBottom: 8 }}>
+          <div style={{ width: `${yesPct}%`, background: 'linear-gradient(90deg,#10b981,#34d399)', transition: 'width .3s' }} />
+          <div style={{ flex: 1, background: 'linear-gradient(90deg,#f87171,#ef4444)' }} />
         </div>
-        <div style={{ flex: 1, background: 'rgba(124,58,237,0.05)', borderRadius: 7, padding: '6px 10px', display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'IBM Plex Mono, monospace' }}>
-          <span style={{ color: '#3d4f6b' }}>🤖 Agents</span>
-          <span style={{ color: '#a78bfa' }}>{aiBets}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div><span style={{ fontSize: 18, fontWeight: 800, color: '#10b981' }}>{yesPct.toFixed(0)}%</span><span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 4 }}>YES</span></div>
+          <div><span style={{ fontSize: 18, fontWeight: 800, color: '#ef4444' }}>{noPct.toFixed(0)}%</span><span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 4 }}>NO</span></div>
         </div>
       </div>
-
-      {/* User's existing position */}
+      <div style={{ padding: '0 18px 12px', display: 'flex', gap: 8 }}>
+        <div style={{ flex: 1, background: '#f9fafb', borderRadius: 7, padding: '5px 10px', display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'IBM Plex Mono, monospace' }}>
+          <span style={{ color: '#9ca3af' }}>👤 Humans</span>
+          <span style={{ color: '#374151', fontWeight: 700 }}>{formatNum(market.human_count)}</span>
+        </div>
+        <div style={{ flex: 1, background: '#f9fafb', borderRadius: 7, padding: '5px 10px', display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'IBM Plex Mono, monospace' }}>
+          <span style={{ color: '#9ca3af' }}>🤖 Agents</span>
+          <span style={{ color: '#374151', fontWeight: 700 }}>{formatNum(market.agent_count)}</span>
+        </div>
+      </div>
       {userPosition && (
-        <div style={{ background: 'rgba(0,255,136,0.05)', border: '1px solid rgba(0,255,136,0.15)', borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: 11, fontFamily: 'IBM Plex Mono, monospace', display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ color: '#3d4f6b' }}>Your bet:</span>
-          <span style={{ color: userPosition.direction === 'YES' ? '#00ff88' : '#ff4444' }}>
-            {userPosition.direction} {fmt(userPosition.amount)}
-          </span>
+        <div style={{ margin: '0 18px 12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px 12px', fontSize: 11, fontFamily: 'IBM Plex Mono, monospace', display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ color: '#6b7280' }}>Your bet:</span>
+          <span style={{ color: userPosition.direction === 'YES' ? '#10b981' : '#ef4444', fontWeight: 700 }}>{userPosition.direction} ${userPosition.amount}</span>
         </div>
       )}
-
-      {/* Bet button */}
-      <button
-        onClick={() => onBetClick(market)}
-        disabled={!!userPosition}
-        style={{
-          width: '100%', padding: '10px 0', borderRadius: 8, border: 'none',
-          background: userPosition
-            ? 'rgba(255,255,255,0.03)'
-            : 'linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,58,237,0.15))',
-          color: userPosition ? '#3d4f6b' : '#00e5ff',
-          border: `1px solid ${userPosition ? 'rgba(255,255,255,0.04)' : 'rgba(0,229,255,0.2)'}`,
-          fontWeight: 700, fontSize: 12, cursor: userPosition ? 'not-allowed' : 'pointer',
-        }}
-      >
-        {userPosition ? '✓ Bet placed' : '⚡ Place Bet'}
-      </button>
+      <div style={{ padding: '10px 18px', background: '#f9fafb', borderTop: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ fontSize: 11, color: '#6b7280', fontFamily: 'IBM Plex Mono, monospace' }}>Vol: <span style={{ color: '#374151', fontWeight: 600 }}>{formatVol(vol)}</span></div>
+        <div style={{ fontSize: 11, color: '#6b7280', fontFamily: 'IBM Plex Mono, monospace' }}>⏱ {timeLeft(market.closes_at)}</div>
+      </div>
+      <div style={{ padding: '12px 18px 16px' }}>
+        <button onClick={() => onBetClick(market)} disabled={!!userPosition} style={{ width: '100%', padding: '10px 0', borderRadius: 10, border: 'none', background: userPosition ? '#f3f4f6' : 'linear-gradient(135deg,#0055ff,#7c3aed)', color: userPosition ? '#9ca3af' : '#fff', fontWeight: 700, fontSize: 13, cursor: userPosition ? 'not-allowed' : 'pointer' }}>
+          {userPosition ? '✓ Bet placed' : '⚡ Place Bet'}
+        </button>
+      </div>
     </div>
   );
 }
 
-// ── Main Markets Component ────────────────────────────────────────────────────
-export default function Markets({ prices }) {
-  const { ready, authenticated, displayName, address, login, logout, placeBet } = useAuth();
+export default function Markets({ markets: marketsProp = [], prices }) {
+  const { ready, authenticated, displayName, login, logout, placeBet } = useAuth();
   const [markets, setMarkets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedMarket, setSelectedMarket] = useState(null);
   const [userPositions, setUserPositions] = useState({});
-  const [filter, setFilter] = useState('ALL');
-  const [betLoading, setBetLoading] = useState(false);
+  const [filter, setFilter] = useState(null);
 
   useEffect(() => {
-    fetchMarkets().then(data => {
-      setMarkets(Array.isArray(data) ? data : []);
-    }).catch(() => setMarkets([])).finally(() => setLoading(false));
-
-    const interval = setInterval(() => {
-      fetchMarkets().then(data => setMarkets(Array.isArray(data) ? data : [])).catch(() => {});
-    }, 15000);
-    return () => clearInterval(interval);
-  }, []);
+    if (marketsProp && marketsProp.length > 0) {
+      setMarkets(marketsProp);
+      setLoading(false);
+    } else {
+      fetchMarkets().then(data => setMarkets(Array.isArray(data) ? data : [])).catch(() => setMarkets([])).finally(() => setLoading(false));
+    }
+  }, [marketsProp]);
 
   const handleBet = async (marketId, direction, amount) => {
     const result = await placeBet(marketId, direction, amount);
-    // Record locally until next API refresh
     setUserPositions(p => ({ ...p, [marketId]: { direction, amount } }));
     return result;
   };
 
-  const filteredMarkets = markets.filter(m => {
-    if (filter === 'ALL') return !m.resolved;
-    return m.asset === filter && !m.resolved;
-  });
+  const activeMarkets = markets.filter(m => !m.resolved);
+  const filteredMarkets = filter ? activeMarkets.filter(m => m.asset === filter) : activeMarkets;
+  const assets = [...new Set(markets.map(m => m.asset))];
+  const totalPool = markets.reduce((s, m) => s + parseFloat(m.yes_pool || 0) + parseFloat(m.no_pool || 0), 0);
+  const totalHumans = markets.reduce((s, m) => s + parseInt(m.human_count || 0), 0);
+  const totalAgents = markets.reduce((s, m) => s + parseInt(m.agent_count || 0), 0);
 
-  const assets = ['ALL', ...new Set(markets.map(m => m.asset))];
-
-  if (!ready) return (
-    <div style={{ maxWidth: 1360, margin: '0 auto', padding: '40px 36px', textAlign: 'center', color: '#3d4f6b', fontFamily: 'IBM Plex Mono, monospace', paddingTop: '120px' }}>
-      Loading...
-    </div>
-  );
+  if (!ready) return <div style={{ background: '#f7f8fa', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>Loading...</div>;
 
   return (
-    <div style={{ maxWidth: 1360, margin: '0 auto', padding: '40px 36px', position: 'relative', zIndex: 1 }}>
-
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 }}>
-        <div>
-          <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: -1, marginBottom: 6 }}>
-            Prediction Markets
-          </h2>
-          <p style={{ color: '#3d4f6b', fontSize: 13 }}>
-            Bet YES or NO against AI agents · USDC on Base · Auto-settled onchain
-          </p>
-        </div>
-
-        {/* Login / User pill */}
-        {authenticated ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ background: 'rgba(0,229,255,0.08)', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 20, padding: '8px 16px', fontSize: 12, color: '#00e5ff', fontFamily: 'IBM Plex Mono, monospace' }}>
-              {displayName}
+    <div style={{ background: '#f7f8fa', minHeight: '100vh' }}>
+      {/* Hero */}
+      <div style={{ background: 'linear-gradient(135deg,#0055ff 0%,#7c3aed 100%)', padding: '48px 36px 40px', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle at 20% 50%,rgba(255,255,255,0.08) 0%,transparent 60%),radial-gradient(circle at 80% 20%,rgba(255,255,255,0.06) 0%,transparent 50%)' }} />
+        <div style={{ maxWidth: 1360, margin: '0 auto', position: 'relative' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 24 }}>
+            <div>
+              <h1 style={{ fontSize: 40, fontWeight: 900, color: '#fff', letterSpacing: -1.5, marginBottom: 8 }}>Prediction Markets</h1>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 15, lineHeight: 1.6, maxWidth: 480 }}>Bet YES or NO against AI agents · USDC on Base · Auto-settled onchain</p>
             </div>
-            <button
-              onClick={logout}
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: '8px 14px', color: '#3d4f6b', fontSize: 12, cursor: 'pointer' }}
-            >
-              Logout
-            </button>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              {[
+                [formatVol(totalPool), 'Total Pool', '💰'],
+                [activeMarkets.length.toString(), 'Active Markets', '🏛'],
+                [formatNum(totalHumans), 'Human Traders', '👤'],
+                [formatNum(totalAgents), 'AI Agents', '🤖'],
+              ].map(([v, l, icon]) => (
+                <div key={l} style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 14, padding: '14px 20px', textAlign: 'center', minWidth: 90 }}>
+                  <div style={{ fontSize: 18 }}>{icon}</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginTop: 4 }}>{v}</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2, fontFamily: 'IBM Plex Mono, monospace' }}>{l}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ marginTop: 20 }}>
+            {!authenticated
+              ? <button onClick={login} style={{ padding: '10px 24px', borderRadius: 24, background: '#fff', color: '#0055ff', fontWeight: 700, fontSize: 13, border: 'none', cursor: 'pointer' }}>Login to Trade →</button>
+              : <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 24, padding: '6px 14px' }}>
+                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.9)', fontFamily: 'IBM Plex Mono, monospace' }}>{displayName}</span>
+                  <button onClick={logout} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 12, padding: '3px 10px', color: 'rgba(255,255,255,0.7)', fontSize: 11, cursor: 'pointer' }}>Logout</button>
+                </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      {/* Filter bar */}
+      <div style={{ background: '#fff', borderBottom: '1px solid #e8ecf0', padding: '0 36px' }}>
+        <div style={{ maxWidth: 1360, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 6, height: 52, overflowX: 'auto' }}>
+          <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 600, marginRight: 4, fontFamily: 'IBM Plex Mono, monospace', flexShrink: 0 }}>ASSET</span>
+          <button onClick={() => setFilter(null)} style={{ padding: '5px 14px', borderRadius: 20, background: !filter ? '#0055ff' : '#f3f4f6', color: !filter ? '#fff' : '#6b7280', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'IBM Plex Mono, monospace', flexShrink: 0 }}>ALL</button>
+          {assets.map(a => (
+            <button key={a} onClick={() => setFilter(a)} style={{ padding: '5px 14px', borderRadius: 20, background: filter === a ? '#0055ff' : '#f3f4f6', color: filter === a ? '#fff' : '#6b7280', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'IBM Plex Mono, monospace', flexShrink: 0 }}>{a}</button>
+          ))}
+          <div style={{ marginLeft: 'auto', fontSize: 12, color: '#9ca3af', fontFamily: 'IBM Plex Mono, monospace', flexShrink: 0 }}>{filteredMarkets.length} markets</div>
+        </div>
+      </div>
+
+      {/* Grid */}
+      <div style={{ maxWidth: 1360, margin: '0 auto', padding: '28px 36px' }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '80px 0', color: '#9ca3af' }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>⚡</div>
+            <div style={{ fontSize: 16, fontWeight: 600 }}>Loading markets...</div>
+          </div>
+        ) : filteredMarkets.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '80px 0', color: '#9ca3af' }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🏛</div>
+            <div style={{ fontSize: 16, fontWeight: 600 }}>No active markets</div>
+            <div style={{ fontSize: 13, marginTop: 6 }}>Markets are created every 30 minutes</div>
           </div>
         ) : (
-          <button
-            onClick={login}
-            style={{
-              padding: '12px 24px', borderRadius: 10, border: 'none',
-              background: 'linear-gradient(135deg,#00e5ff,#7c3aed)',
-              color: '#000', fontWeight: 800, fontSize: 13, cursor: 'pointer',
-            }}
-          >
-            Login to Trade
-          </button>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 16 }}>
+            {filteredMarkets.map(market => (
+              <MarketCard key={market.id} market={market} onBetClick={authenticated ? setSelectedMarket : () => login()} userPosition={userPositions[market.id]} />
+            ))}
+          </div>
         )}
       </div>
 
-      {/* Stats bar */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 28 }}>
-        {[
-          ['Active Markets', filteredMarkets.length],
-          ['Total Pool', fmt(markets.reduce((s, m) => s + (m.yes_pool || 0) + (m.no_pool || 0), 0)) + ' USDC'],
-          ['Human Traders', markets.reduce((s, m) => s + (m.human_count || 0), 0)],
-          ['AI Agents', markets.reduce((s, m) => s + (m.agent_count || 0), 0)],
-        ].map(([label, value]) => (
-          <div key={label} style={{ background: '#080c1a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: '14px 16px' }}>
-            <div style={{ fontSize: 10, color: '#3d4f6b', fontFamily: 'IBM Plex Mono, monospace', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>{label}</div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: '#dde4f0' }}>{value}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Asset filter */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-        {assets.map(a => (
-          <button
-            key={a}
-            onClick={() => setFilter(a)}
-            style={{
-              padding: '6px 16px', borderRadius: 8, border: '1px solid',
-              borderColor: filter === a ? '#00e5ff' : 'rgba(255,255,255,0.08)',
-              background: filter === a ? 'rgba(0,229,255,0.08)' : 'transparent',
-              color: filter === a ? '#00e5ff' : '#3d4f6b',
-              fontSize: 12, cursor: 'pointer', fontFamily: 'IBM Plex Mono, monospace',
-            }}
-          >
-            {a}
-          </button>
-        ))}
-      </div>
-
-      {/* Login prompt */}
-      {!authenticated && (
-        <div style={{
-          background: 'linear-gradient(135deg, rgba(0,229,255,0.05), rgba(124,58,237,0.05))',
-          border: '1px solid rgba(0,229,255,0.15)', borderRadius: 12,
-          padding: '20px 24px', marginBottom: 24,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
-          <div>
-            <div style={{ fontWeight: 700, marginBottom: 4 }}>Login to place bets</div>
-            <div style={{ fontSize: 12, color: '#3d4f6b' }}>Connect Twitter/X or your wallet to trade against AI agents</div>
-          </div>
-          <button
-            onClick={login}
-            style={{
-              padding: '10px 22px', borderRadius: 8, border: 'none',
-              background: 'linear-gradient(135deg,#00e5ff,#7c3aed)',
-              color: '#000', fontWeight: 700, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap',
-            }}
-          >
-            Connect →
-          </button>
-        </div>
-      )}
-
-      {/* Markets grid */}
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: '#3d4f6b', fontFamily: 'IBM Plex Mono, monospace' }}>
-          Loading markets...
-        </div>
-      ) : filteredMarkets.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: '#3d4f6b', fontFamily: 'IBM Plex Mono, monospace' }}>
-          No active markets right now. Check back soon.
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
-          {filteredMarkets.map(market => (
-            <MarketCard
-              key={market.id}
-              market={market}
-              onBetClick={authenticated ? setSelectedMarket : () => login()}
-              userPosition={userPositions[market.id]}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Bet modal */}
-      {selectedMarket && (
-        <BetModal
-          market={selectedMarket}
-          onClose={() => setSelectedMarket(null)}
-          onBet={handleBet}
-        />
-      )}
+      {selectedMarket && <BetModal market={selectedMarket} onClose={() => setSelectedMarket(null)} onBet={handleBet} />}
     </div>
   );
 }
