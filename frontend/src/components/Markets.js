@@ -222,56 +222,80 @@ export default function Markets({ markets: marketsProp = [], prices }) {
 
   return (
     <div style={{ background: '#f7f8fa', minHeight: '100vh' }}>
+      <style>{`
+        .markets-hero { padding: 32px 20px 28px !important; }
+        .markets-hero h1 { font-size: 28px !important; letter-spacing: -0.5px !important; }
+        .markets-stats { gap: 8px !important; }
+        .markets-stat { padding: 10px 14px !important; min-width: 70px !important; }
+        .markets-stat-val { font-size: 16px !important; }
+        .filter-bar { padding: 0 12px !important; }
+        .markets-grid-wrapper { padding: 16px 12px 80px !important; }
+        .markets-grid { grid-template-columns: 1fr !important; }
+        @media (min-width: 480px) {
+          .markets-hero { padding: 40px 24px 32px !important; }
+          .markets-grid { grid-template-columns: repeat(auto-fill,minmax(280px,1fr)) !important; }
+          .markets-grid-wrapper { padding: 20px 16px 80px !important; }
+        }
+        @media (min-width: 769px) {
+          .markets-hero { padding: 48px 36px 40px !important; }
+          .markets-hero h1 { font-size: 40px !important; letter-spacing: -1.5px !important; }
+          .markets-stat { padding: 14px 20px !important; min-width: 90px !important; }
+          .markets-stat-val { font-size: 20px !important; }
+          .filter-bar { padding: 0 36px !important; }
+          .markets-grid-wrapper { padding: 28px 36px !important; }
+          .markets-grid { grid-template-columns: repeat(auto-fill,minmax(300px,1fr)) !important; }
+        }
+      `}</style>
+
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg,#0055ff 0%,#7c3aed 100%)', padding: '48px 36px 40px', position: 'relative', overflow: 'hidden' }}>
+      <div className="markets-hero" style={{ background: 'linear-gradient(135deg,#0055ff 0%,#7c3aed 100%)', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle at 20% 50%,rgba(255,255,255,0.08) 0%,transparent 60%),radial-gradient(circle at 80% 20%,rgba(255,255,255,0.06) 0%,transparent 50%)' }} />
         <div style={{ maxWidth: 1360, margin: '0 auto', position: 'relative' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 24 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div>
-              <h1 style={{ fontSize: 40, fontWeight: 900, color: '#fff', letterSpacing: -1.5, marginBottom: 8 }}>Prediction Markets</h1>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 15, lineHeight: 1.6, maxWidth: 480 }}>Bet YES or NO against AI agents · USDC on Base · Auto-settled onchain</p>
+              <h1 style={{ fontWeight: 900, color: '#fff', marginBottom: 8, lineHeight: 1.1 }}>AI Prediction<br/>Markets</h1>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, lineHeight: 1.6, maxWidth: 480 }}>Autonomous AI agents trade against each other and humans on crypto price predictions.</p>
             </div>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <div className="markets-stats" style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
               {[
-                [formatVol(totalPool), 'Total Pool', '💰'],
+                [formatVol(totalPool), 'Total Volume', '💰'],
                 [activeMarkets.length.toString(), 'Active Markets', '🏛'],
-                [formatNum(totalHumans), 'Human Traders', '👤'],
-                [formatNum(totalAgents), 'AI Agents', '🤖'],
+                [formatNum(totalAgents), 'Active Agents', '🤖'],
               ].map(([v, l, icon]) => (
-                <div key={l} style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 14, padding: '14px 20px', textAlign: 'center', minWidth: 90 }}>
-                  <div style={{ fontSize: 18 }}>{icon}</div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginTop: 4 }}>{v}</div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2, fontFamily: 'IBM Plex Mono, monospace' }}>{l}</div>
+                <div key={l} className="markets-stat" style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 14, textAlign: 'center', minWidth: 80 }}>
+                  <div style={{ fontSize: 16 }}>{icon}</div>
+                  <div className="markets-stat-val" style={{ fontWeight: 800, color: '#fff', marginTop: 4 }}>{v}</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', marginTop: 2, fontFamily: 'IBM Plex Mono, monospace' }}>{l}</div>
                 </div>
               ))}
             </div>
-          </div>
-          <div style={{ marginTop: 20 }}>
-            {!authenticated
-              ? <button onClick={login} style={{ padding: '10px 24px', borderRadius: 24, background: '#fff', color: '#0055ff', fontWeight: 700, fontSize: 13, border: 'none', cursor: 'pointer' }}>Login to Trade →</button>
-              : <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 24, padding: '6px 14px' }}>
-                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.9)', fontFamily: 'IBM Plex Mono, monospace' }}>{displayName}</span>
-                  <button onClick={logout} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 12, padding: '3px 10px', color: 'rgba(255,255,255,0.7)', fontSize: 11, cursor: 'pointer' }}>Logout</button>
-                </div>
-            }
+            <div>
+              {!authenticated
+                ? <button onClick={login} style={{ padding: '10px 24px', borderRadius: 24, background: '#fff', color: '#0055ff', fontWeight: 700, fontSize: 13, border: 'none', cursor: 'pointer' }}>Login to Trade →</button>
+                : <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 24, padding: '6px 14px' }}>
+                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.9)', fontFamily: 'IBM Plex Mono, monospace' }}>{displayName}</span>
+                    <button onClick={logout} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 12, padding: '3px 10px', color: 'rgba(255,255,255,0.7)', fontSize: 11, cursor: 'pointer' }}>Logout</button>
+                  </div>
+              }
+            </div>
           </div>
         </div>
       </div>
 
       {/* Filter bar */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #e8ecf0', padding: '0 36px' }}>
-        <div style={{ maxWidth: 1360, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 6, height: 52, overflowX: 'auto' }}>
-          <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 600, marginRight: 4, fontFamily: 'IBM Plex Mono, monospace', flexShrink: 0 }}>ASSET</span>
-          <button onClick={() => setFilter(null)} style={{ padding: '5px 14px', borderRadius: 20, background: !filter ? '#0055ff' : '#f3f4f6', color: !filter ? '#fff' : '#6b7280', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'IBM Plex Mono, monospace', flexShrink: 0 }}>ALL</button>
+      <div className="filter-bar" style={{ background: '#fff', borderBottom: '1px solid #e8ecf0' }}>
+        <div style={{ maxWidth: 1360, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 6, height: 52, overflowX: 'auto', msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
+          <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600, marginRight: 4, fontFamily: 'IBM Plex Mono, monospace', flexShrink: 0 }}>TIMEFRAME</span>
+          <button onClick={() => setFilter(null)} style={{ padding: '5px 12px', borderRadius: 20, background: !filter ? '#0055ff' : '#f3f4f6', color: !filter ? '#fff' : '#6b7280', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'IBM Plex Mono, monospace', flexShrink: 0 }}>ALL</button>
           {assets.map(a => (
-            <button key={a} onClick={() => setFilter(a)} style={{ padding: '5px 14px', borderRadius: 20, background: filter === a ? '#0055ff' : '#f3f4f6', color: filter === a ? '#fff' : '#6b7280', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'IBM Plex Mono, monospace', flexShrink: 0 }}>{a}</button>
+            <button key={a} onClick={() => setFilter(a)} style={{ padding: '5px 12px', borderRadius: 20, background: filter === a ? '#0055ff' : '#f3f4f6', color: filter === a ? '#fff' : '#6b7280', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'IBM Plex Mono, monospace', flexShrink: 0 }}>{a}</button>
           ))}
           <div style={{ marginLeft: 'auto', fontSize: 12, color: '#9ca3af', fontFamily: 'IBM Plex Mono, monospace', flexShrink: 0 }}>{filteredMarkets.length} markets</div>
         </div>
       </div>
 
       {/* Grid */}
-      <div style={{ maxWidth: 1360, margin: '0 auto', padding: '28px 36px' }}>
+      <div className="markets-grid-wrapper" style={{ maxWidth: 1360, margin: '0 auto' }}>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '80px 0', color: '#9ca3af' }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>⚡</div>
@@ -284,7 +308,7 @@ export default function Markets({ markets: marketsProp = [], prices }) {
             <div style={{ fontSize: 13, marginTop: 6 }}>Markets are created every 30 minutes</div>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 16 }}>
+          <div className="markets-grid" style={{ display: 'grid', gap: 14 }}>
             {filteredMarkets.map(market => (
               <MarketCard key={market.id} market={market} onBetClick={authenticated ? setSelectedMarket : () => login()} userPosition={userPositions[market.id]} />
             ))}
