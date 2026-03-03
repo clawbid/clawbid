@@ -3,91 +3,19 @@
 /**
  * PrivyProvider wrapper + useAuth hook
  * 
- * Supports:
- *   - Twitter/X login
- *   - Wallet connect (MetaMask, WalletConnect, Coinbase)
- * 
- * Setup:
- *   1. npm install @privy-io/react-auth viem wagmi
- *   2. Get App ID from https://dashboard.privy.io
- *   3. Set NEXT_PUBLIC_PRIVY_APP_ID in .env.local
+ * MODE: Simulation (no smart contract required)
+ * Bets are recorded in backend DB only.
+ * When smart contract is deployed later, set NEXT_PUBLIC_MARKET_ADDRESS
+ * and the hook will automatically switch to onchain mode.
  */
 
 import { PrivyProvider as BasePrivyProvider, usePrivy, useWallets } from '@privy-io/react-auth';
-import { createWalletClient, custom, parseUnits, encodeFunctionData } from 'viem';
 import { base } from 'viem/chains';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
+import { api } from './api';
 
-// ── ABI (only functions we need) ─────────────────────────────────────────────
-export const MARKET_ABI = [
-  {
-    name: 'placeBet',
-    type: 'function',
-    stateMutability: 'nonpayable',
-    inputs: [
-      { name: 'marketId', type: 'uint256' },
-      { name: 'direction', type: 'uint8' },   // 1=YES, 2=NO
-      { name: 'amount', type: 'uint256' },
-    ],
-    outputs: [],
-  },
-  {
-    name: 'claim',
-    type: 'function',
-    stateMutability: 'nonpayable',
-    inputs: [{ name: 'marketId', type: 'uint256' }],
-    outputs: [],
-  },
-  {
-    name: 'calcPayout',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [
-      { name: 'marketId', type: 'uint256' },
-      { name: 'trader', type: 'address' },
-    ],
-    outputs: [{ name: '', type: 'uint256' }],
-  },
-  {
-    name: 'getOdds',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [{ name: 'marketId', type: 'uint256' }],
-    outputs: [
-      { name: 'yesPct', type: 'uint256' },
-      { name: 'noPct', type: 'uint256' },
-    ],
-  },
-];
-
-export const ERC20_ABI = [
-  {
-    name: 'approve',
-    type: 'function',
-    stateMutability: 'nonpayable',
-    inputs: [
-      { name: 'spender', type: 'address' },
-      { name: 'amount', type: 'uint256' },
-    ],
-    outputs: [{ name: '', type: 'bool' }],
-  },
-  {
-    name: 'allowance',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [
-      { name: 'owner', type: 'address' },
-      { name: 'spender', type: 'address' },
-    ],
-    outputs: [{ name: '', type: 'uint256' }],
-  },
-];
-
-// ── Addresses ─────────────────────────────────────────────────────────────────
-export const CONTRACTS = {
-  USDC:   process.env.NEXT_PUBLIC_USDC_ADDRESS   || '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC on Base
-  MARKET: process.env.NEXT_PUBLIC_MARKET_ADDRESS || '',  // Set after deploying ClawBidMarket.sol
-};
+const MARKET_ADDRESS = process.env.NEXT_PUBLIC_MARKET_ADDRESS || '';
+const SIMULATION_MODE = !MARKET_ADDRESS;
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 export function PrivyProvider({ children }) {
@@ -98,11 +26,10 @@ export function PrivyProvider({ children }) {
         appearance: {
           theme: 'dark',
           accentColor: '#00e5ff',
-          logo: '/logo.png',
         },
-        loginMethods: ['twitter', 'wallet'],
+        loginMethods: ['twitter', 'wallet', 'email'],
         embeddedWallets: {
-          createOnLogin: 'users-without-wallets', // auto-create for Twitter users
+          createOnLogin: 'users-without-wallets',
         },
         defaultChain: base,
         supportedChains: [base],
@@ -121,73 +48,73 @@ export function useAuth() {
   const wallet = wallets?.[0] || null;
   const address = wallet?.address || null;
 
-  // Twitter handle if logged in via Twitter
   const twitterHandle = user?.twitter?.username
     ? `@${user.twitter.username}`
     : null;
 
-  // Short display name
   const displayName = twitterHandle
-    || (address ? `${address.slice(0, 6)}...${address.slice(-4)}` : null);
+    || (address ? `${address.slice(0, 6)}...${address.slice(-4)}` : null)
+    || (user?.email?.address ? user.email.address.split('@')[0] : null);
 
-  // Get wallet client for signing transactions
-  const getWalletClient = useCallback(async () => {
-    if (!wallet) throw new Error('No wallet connected');
-    const provider = await wallet.getEthereumProvider();
-    return createWalletClient({
-      chain: base,
-      transport: custom(provider),
-    });
-  }, [wallet]);
-
-  // Place bet: approve USDC + call placeBet
+  // ── Place Bet ───────────────────────────────────────────────────────────────
+  // Simulation mode: save to DB only (no wallet tx required)
+  // Onchain mode: sign USDC tx on Base (when contract deployed)
   const placeBet = useCallback(async (marketId, direction, amountUsdc) => {
-    if (!address) throw new Error('Not connected');
-    if (!CONTRACTS.MARKET) throw new Error('Market contract not deployed yet');
+    if (!authenticated) throw new Error('Please login first');
 
-    const walletClient = await getWalletClient();
-    const amountWei = parseUnits(amountUsdc.toString(), 6); // USDC = 6 decimals
-    const directionInt = direction === 'YES' ? 1 : 2;
+    if (SIMULATION_MODE) {
+      // ── SIMULATION: just call backend API ──────────────────────────────────
+      const headers = {};
+      if (address) headers['wallet_address'] = address;
 
-    // Step 1: Approve USDC
-    const approveTx = await walletClient.writeContract({
-      address: CONTRACTS.USDC,
-      abi: ERC20_ABI,
-      functionName: 'approve',
-      args: [CONTRACTS.MARKET, amountWei],
-      account: address,
-    });
+      const res = await api.post(`/api/markets/${marketId}/bet`, {
+        direction,
+        amount_usdc: amountUsdc,
+        tx_hash: `sim_${Date.now()}`,   // fake tx hash for simulation
+        privy_user_id: user?.id,
+        twitter_handle: user?.twitter?.username || null,
+      }, { headers });
 
-    // Wait for approval (simple delay — in prod use publicClient.waitForTransactionReceipt)
-    await new Promise(r => setTimeout(r, 3000));
+      return { simulated: true, ...res.data };
 
-    // Step 2: Place bet
-    const betTx = await walletClient.writeContract({
-      address: CONTRACTS.MARKET,
-      abi: MARKET_ABI,
-      functionName: 'placeBet',
-      args: [BigInt(marketId), directionInt, amountWei],
-      account: address,
-    });
+    } else {
+      // ── ONCHAIN: sign real USDC transaction ────────────────────────────────
+      const { createWalletClient, custom, parseUnits } = await import('viem');
 
-    return { approveTx, betTx };
-  }, [address, getWalletClient]);
+      const MARKET_ABI = [
+        { name: 'placeBet', type: 'function', stateMutability: 'nonpayable',
+          inputs: [{ name: 'marketId', type: 'uint256' }, { name: 'direction', type: 'uint8' }, { name: 'amount', type: 'uint256' }], outputs: [] },
+      ];
+      const ERC20_ABI = [
+        { name: 'approve', type: 'function', stateMutability: 'nonpayable',
+          inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ name: '', type: 'bool' }] },
+      ];
 
-  // Claim payout
-  const claimPayout = useCallback(async (marketId) => {
-    if (!address) throw new Error('Not connected');
-    const walletClient = await getWalletClient();
+      const provider = await wallet.getEthereumProvider();
+      const walletClient = createWalletClient({ chain: base, transport: custom(provider) });
+      const amountWei = parseUnits(amountUsdc.toString(), 6);
+      const USDC = process.env.NEXT_PUBLIC_USDC_ADDRESS || '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 
-    const tx = await walletClient.writeContract({
-      address: CONTRACTS.MARKET,
-      abi: MARKET_ABI,
-      functionName: 'claim',
-      args: [BigInt(marketId)],
-      account: address,
-    });
+      const approveTx = await walletClient.writeContract({
+        address: USDC, abi: ERC20_ABI, functionName: 'approve',
+        args: [MARKET_ADDRESS, amountWei], account: address,
+      });
+      await new Promise(r => setTimeout(r, 3000));
 
-    return tx;
-  }, [address, getWalletClient]);
+      const betTx = await walletClient.writeContract({
+        address: MARKET_ADDRESS, abi: MARKET_ABI, functionName: 'placeBet',
+        args: [BigInt(marketId), direction === 'YES' ? 1 : 2, amountWei], account: address,
+      });
+
+      // Record in backend too
+      await api.post(`/api/markets/${marketId}/bet`, {
+        direction, amount_usdc: amountUsdc, tx_hash: betTx,
+        privy_user_id: user?.id, twitter_handle: user?.twitter?.username,
+      }, { headers: { wallet_address: address } });
+
+      return { approveTx, betTx };
+    }
+  }, [authenticated, address, wallet, user]);
 
   return {
     ready,
@@ -197,9 +124,9 @@ export function useAuth() {
     address,
     displayName,
     twitterHandle,
+    simulationMode: SIMULATION_MODE,
     login,
     logout,
     placeBet,
-    claimPayout,
   };
 }
