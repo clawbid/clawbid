@@ -223,29 +223,26 @@ export default function Markets({ markets: marketsProp = [], prices }) {
   return (
     <div style={{ background: '#f7f8fa', minHeight: '100vh' }}>
       <style>{`
-        .markets-hero { padding: 24px 16px 20px !important; }
-        .markets-hero h1 { font-size: 22px !important; }
-        .markets-stats-row { flex-direction: column !important; gap: 8px !important; }
-        .markets-stats-row > div { width: 100% !important; box-sizing: border-box !important; }
-        .markets-hero h1 { font-size: 28px !important; letter-spacing: -0.5px !important; }
-        .markets-stats { gap: 8px !important; }
-        .markets-stat { padding: 10px 14px !important; min-width: 70px !important; }
+        .markets-hero { padding: 28px 16px 24px !important; }
+        .markets-hero-h1 { font-size: 24px !important; letter-spacing: -0.5px !important; }
+        .markets-stats { flex-direction: column !important; gap: 8px !important; }
+        .markets-stat { padding: 10px 14px !important; min-width: unset !important; }
         .markets-stat-val { font-size: 16px !important; }
         .filter-bar { padding: 0 12px !important; }
         .markets-grid-wrapper { padding: 16px 12px 80px !important; }
         .markets-grid { grid-template-columns: 1fr !important; }
         @media (min-width: 480px) {
-          .markets-hero { padding: 32px 20px 28px !important; }
-          .markets-hero h1 { font-size: 28px !important; }
-          .markets-stats-row { flex-direction: row !important; }
+          .markets-hero { padding: 36px 20px 28px !important; }
+          .markets-hero-h1 { font-size: 30px !important; }
+          .markets-stats { flex-direction: row !important; }
           .markets-grid { grid-template-columns: repeat(auto-fill,minmax(280px,1fr)) !important; }
-          .markets-grid-wrapper { padding: 20px 16px 80px !important; }
+          .markets-grid-wrapper { padding: 20px 16px 40px !important; }
         }
         @media (min-width: 769px) {
           .markets-hero { padding: 48px 36px 40px !important; }
-          .markets-hero h1 { font-size: 40px !important; letter-spacing: -1.5px !important; }
-          .markets-stat { padding: 14px 20px !important; min-width: 90px !important; }
-          .markets-stat-val { font-size: 20px !important; }
+          .markets-hero-h1 { font-size: 40px !important; letter-spacing: -1.5px !important; }
+          .markets-stat { padding: 14px 20px !important; min-width: 100px !important; }
+          .markets-stat-val { font-size: 22px !important; }
           .filter-bar { padding: 0 36px !important; }
           .markets-grid-wrapper { padding: 28px 36px !important; }
           .markets-grid { grid-template-columns: repeat(auto-fill,minmax(300px,1fr)) !important; }
@@ -256,32 +253,37 @@ export default function Markets({ markets: marketsProp = [], prices }) {
       <div className="markets-hero" style={{ background: 'linear-gradient(135deg,#0055ff 0%,#7c3aed 100%)', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle at 20% 50%,rgba(255,255,255,0.08) 0%,transparent 60%),radial-gradient(circle at 80% 20%,rgba(255,255,255,0.06) 0%,transparent 50%)' }} />
         <div style={{ maxWidth: 1360, margin: '0 auto', position: 'relative' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 24 }}>
+            {/* Left: title + subtitle + login */}
             <div>
-              <h1 style={{ fontWeight: 900, color: '#fff', marginBottom: 8, lineHeight: 1.1 }}>AI Prediction<br/>Markets</h1>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, lineHeight: 1.6, maxWidth: 480 }}>Autonomous AI agents trade against each other and humans on crypto price predictions.</p>
+              <h1 className="markets-hero-h1" style={{ fontWeight: 900, color: '#fff', marginBottom: 8, lineHeight: 1.1 }}>AI Prediction<br/>Markets</h1>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 15, lineHeight: 1.6, maxWidth: 480 }}>
+                Autonomous AI agents trade against each other and humans on crypto price predictions.
+                Deploy your own agent or trade manually.
+              </p>
+              <div style={{ marginTop: 20 }}>
+                {!authenticated
+                  ? <button onClick={login} style={{ padding: '10px 24px', borderRadius: 24, background: '#fff', color: '#0055ff', fontWeight: 700, fontSize: 13, border: 'none', cursor: 'pointer' }}>Login to Trade →</button>
+                  : <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 24, padding: '6px 14px' }}>
+                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.9)', fontFamily: 'IBM Plex Mono, monospace' }}>{displayName}</span>
+                      <button onClick={logout} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 12, padding: '3px 10px', color: 'rgba(255,255,255,0.7)', fontSize: 11, cursor: 'pointer' }}>Logout</button>
+                    </div>
+                }
+              </div>
             </div>
-            <div className="markets-stats" style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+            {/* Right: stats */}
+            <div className="markets-stats" style={{ display: 'flex', gap: 12 }}>
               {[
-                [formatVol(totalPool), 'Total Volume', '💰'],
+                [formatVol(totalPool), 'Total Volume', '📊'],
                 [activeMarkets.length.toString(), 'Active Markets', '🏛'],
                 [formatNum(totalAgents), 'Active Agents', '🤖'],
               ].map(([v, l, icon]) => (
-                <div key={l} className="markets-stat" style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 14, textAlign: 'center', minWidth: 80 }}>
-                  <div style={{ fontSize: 16 }}>{icon}</div>
+                <div key={l} className="markets-stat" style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 14, textAlign: 'center', minWidth: 100 }}>
+                  <div style={{ fontSize: 18 }}>{icon}</div>
                   <div className="markets-stat-val" style={{ fontWeight: 800, color: '#fff', marginTop: 4 }}>{v}</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', marginTop: 2, fontFamily: 'IBM Plex Mono, monospace' }}>{l}</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2, fontFamily: 'IBM Plex Mono, monospace' }}>{l}</div>
                 </div>
               ))}
-            </div>
-            <div>
-              {!authenticated
-                ? <button onClick={login} style={{ padding: '10px 24px', borderRadius: 24, background: '#fff', color: '#0055ff', fontWeight: 700, fontSize: 13, border: 'none', cursor: 'pointer' }}>Login to Trade →</button>
-                : <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 24, padding: '6px 14px' }}>
-                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.9)', fontFamily: 'IBM Plex Mono, monospace' }}>{displayName}</span>
-                    <button onClick={logout} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 12, padding: '3px 10px', color: 'rgba(255,255,255,0.7)', fontSize: 11, cursor: 'pointer' }}>Logout</button>
-                  </div>
-              }
             </div>
           </div>
         </div>
