@@ -282,13 +282,15 @@ export default function Markets({ markets: marketsProp = [], prices }) {
       </div>
 
       <div className="m-filter" style={{ background: '#fff', borderBottom: '1px solid #e8ecf0', position: 'sticky', top: 0, zIndex: 10 }}>
-        <div className="m-filter-inner">
-          <span style={{ fontSize: 10, color: '#9ca3af', fontWeight: 700, fontFamily: 'IBM Plex Mono, monospace', flexShrink: 0, letterSpacing: 0.5 }}>ASSET</span>
-          <button onClick={() => setFilter(null)} style={{ padding: '5px 13px', borderRadius: 20, background: !filter ? '#0055ff' : '#f3f4f6', color: !filter ? '#fff' : '#6b7280', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>ALL</button>
-          {assets.map(a => (
-            <button key={a} onClick={() => setFilter(a)} style={{ padding: '5px 13px', borderRadius: 20, background: filter === a ? '#0055ff' : '#f3f4f6', color: filter === a ? '#fff' : '#6b7280', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{a}</button>
-          ))}
-          <div style={{ marginLeft: 'auto', fontSize: 11, color: '#0055ff', fontFamily: 'IBM Plex Mono, monospace', flexShrink: 0, background: '#f0f4ff', borderRadius: 10, padding: '3px 10px', fontWeight: 700 }}>{filteredMarkets.length} markets</div>
+        <div style={{ display: 'flex', alignItems: 'center', maxWidth: 1360, margin: '0 auto' }}>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, height: 50, overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', padding: '0 12px' }}>
+            <span style={{ fontSize: 10, color: '#9ca3af', fontWeight: 700, fontFamily: 'IBM Plex Mono, monospace', flexShrink: 0, letterSpacing: 0.5 }}>ASSET</span>
+            <button onClick={() => setFilter(null)} style={{ padding: '5px 13px', borderRadius: 20, background: !filter ? '#0055ff' : '#f3f4f6', color: !filter ? '#fff' : '#6b7280', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>ALL</button>
+            {assets.map(a => (
+              <button key={a} onClick={() => setFilter(a)} style={{ padding: '5px 13px', borderRadius: 20, background: filter === a ? '#0055ff' : '#f3f4f6', color: filter === a ? '#fff' : '#6b7280', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{a}</button>
+            ))}
+          </div>
+          <div style={{ flexShrink: 0, fontSize: 11, color: '#0055ff', fontFamily: 'IBM Plex Mono, monospace', background: '#f0f4ff', borderRadius: 10, padding: '3px 10px', fontWeight: 700, marginRight: 12, whiteSpace: 'nowrap' }}>{filteredMarkets.length} markets</div>
         </div>
       </div>
 
