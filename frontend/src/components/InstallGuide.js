@@ -245,7 +245,6 @@ export default function InstallGuide() {
               ['✓ Wallet generated locally, never transmitted', GREEN],
               ['✓ Custom skill support — write in plain English', GOLD],
               ['✓ Multi-skill support — load multiple strategies', GOLD],
-              ['✓ All CLI messages now in English', CYAN],
             ].map(([msg, color]) => (
               <div key={msg} style={{ fontSize: 12, fontFamily: MONO, color, padding: '3px 0' }}>{msg}</div>
             ))}
