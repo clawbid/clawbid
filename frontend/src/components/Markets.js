@@ -227,9 +227,9 @@ export default function Markets({ markets: marketsProp = [], prices }) {
         .markets-hero     { padding: 24px 16px 20px !important; }
         .markets-hero-h1  { font-size: 22px !important; letter-spacing: -0.5px !important; }
         .markets-hero p   { font-size: 13px !important; }
-        .markets-stats    { flex-direction: row !important; flex-wrap: wrap !important; gap: 8px !important; }
-        .markets-stat     { padding: 10px 12px !important; min-width: unset !important; flex: 1 1 70px !important; }
-        .markets-stat-val { font-size: 14px !important; }
+        .markets-stats    { flex-direction: row !important; flex-wrap: wrap !important; gap: 6px !important; }
+        .markets-stat     { padding: 8px 10px !important; min-width: unset !important; flex: 1 1 60px !important; }
+        .markets-stat-val { font-size: 13px !important; }
         .markets-stat-lbl { font-size: 9px !important; }
         .filter-bar       { padding: 0 12px !important; }
         .markets-grid-wrapper { padding: 14px 12px 80px !important; }
@@ -286,7 +286,7 @@ export default function Markets({ markets: marketsProp = [], prices }) {
                 [formatNum(totalHumans), 'Humans', '👤'],
                 [formatNum(totalAgents), 'AI Agents', '🤖'],
               ].map(([v, l, icon]) => (
-                <div key={l} className="markets-stat" style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 14, textAlign: 'center', minWidth: 100 }}>
+                <div key={l} className="markets-stat" style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 14, textAlign: 'center' }}>
                   <div style={{ fontSize: 18 }}>{icon}</div>
                   <div className="markets-stat-val" style={{ fontWeight: 800, color: '#fff', marginTop: 4 }}>{v}</div>
                   <div className="markets-stat-lbl" style={{ color: 'rgba(255,255,255,0.6)', marginTop: 2, fontFamily: 'IBM Plex Mono, monospace' }}>{l}</div>
@@ -300,7 +300,7 @@ export default function Markets({ markets: marketsProp = [], prices }) {
       {/* Filter bar */}
       <div className="filter-bar" style={{ background: '#fff', borderBottom: '1px solid #e8ecf0' }}>
         <div style={{ maxWidth: 1360, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 6, height: 52, overflowX: 'auto', msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
-          <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600, marginRight: 4, fontFamily: 'IBM Plex Mono, monospace', flexShrink: 0 }}>TIMEFRAME</span>
+          <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600, marginRight: 4, fontFamily: 'IBM Plex Mono, monospace', flexShrink: 0 }}>ASSET</span>
           <button onClick={() => setFilter(null)} style={{ padding: '5px 12px', borderRadius: 20, background: !filter ? '#0055ff' : '#f3f4f6', color: !filter ? '#fff' : '#6b7280', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'IBM Plex Mono, monospace', flexShrink: 0 }}>ALL</button>
           {assets.map(a => (
             <button key={a} onClick={() => setFilter(a)} style={{ padding: '5px 12px', borderRadius: 20, background: filter === a ? '#0055ff' : '#f3f4f6', color: filter === a ? '#fff' : '#6b7280', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'IBM Plex Mono, monospace', flexShrink: 0 }}>{a}</button>
